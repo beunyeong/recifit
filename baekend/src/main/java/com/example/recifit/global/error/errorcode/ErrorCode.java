@@ -1,0 +1,33 @@
+package com.example.recifit.global.error.errorcode;
+
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+
+@Getter
+public enum ErrorCode {
+
+    /**
+     * 400 BAD_REQUEST
+     */
+    DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "중복된 이메일입니다."),
+
+    /**
+     * 404 NOT_FOUND
+     */
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "멤버 정보를 찾을 수 없습니다.");
+
+
+
+
+//    ERROR_STATUS(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
+//    FAIL_STATUS(HttpStatus.BAD_REQUEST, "요청에 실패 했습니다."),
+
+    private final HttpStatus httpStatus;
+
+    private final String message;
+
+    ErrorCode(HttpStatus httpStatus, String message) {
+        this.httpStatus = httpStatus;
+        this.message = message;
+    }
+}
