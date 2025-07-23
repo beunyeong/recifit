@@ -24,17 +24,20 @@ public class Member extends BaseEntity {
 
     private String password;
 
+    private String nickname;
+
     private MemberRole memberRole;
 
     private MemberType memberType;
 
     private CookingLevel cookingLevel;
 
-    public Member(Long id, String email, String password,
-                  MemberRole memberrole, MemberType memberType, CookingLevel cookingLevel) {
+    public Member(Long id, String email, String password, String nickname, MemberRole memberrole,
+                  MemberType memberType, CookingLevel cookingLevel) {
         this.id = id;
         this.email = email;
         this.password = password;
+        this.nickname = nickname;
         this.memberRole = memberrole;
         this.memberType = memberType;
         this.cookingLevel = cookingLevel;

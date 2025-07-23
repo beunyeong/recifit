@@ -1,9 +1,5 @@
 package com.example.recifit.domain.member.dto;
 
-import com.example.recifit.domain.member.entity.Member;
-import com.example.recifit.domain.member.enums.CookingLevel;
-import com.example.recifit.domain.member.enums.MemberRole;
-import com.example.recifit.domain.member.enums.MemberType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -23,18 +19,22 @@ public class SignupRequestDto {
             message = "비밀번호는 영문 소문자, 숫자, 특수문자를 포함한 8~12자여야 합니다.")
     private String password;
 
-    public SignupRequestDto(String email, String password) {
+    @NotBlank(message = "닉네임은 필수 입력값입니다.")
+    private String nickname;
+
+    public SignupRequestDto(String email, String password, String nickname) {
         this.email = email;
         this.password = password;
+        this.nickname = nickname;
     }
 
-    public Member toEntity(String encodedPassword, MemberRole memberRole) {
-        return Member.builder()
-                .email(email)
-                .password(encodedPassword)
-                .memberRole(memberRole)
-                .memberType(MemberType.SINGLE)
-                .cookingLevel(CookingLevel.BEGINNER)
-                .build();
-    }
+//    public Member toEntity(String encodedPassword, MemberRole memberRole) {
+//        return Member.builder()
+//                .email(email)
+//                .password(encodedPassword)
+//                .memberRole(memberRole)
+//                .memberType(MemberType.SINGLE)
+//                .cookingLevel(CookingLevel.BEGINNER)
+//                .build();
+//    }
 }
