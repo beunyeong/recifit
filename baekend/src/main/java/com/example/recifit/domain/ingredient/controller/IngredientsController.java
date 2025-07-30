@@ -11,15 +11,15 @@ import java.util.List;
 @RequestMapping("/api/ingredients")
 public class IngredientsController {
 
-    private final IngredientsService foodService;
+    private final IngredientsService ingredientsService;
 
-    public IngredientsController(IngredientsService foodService) {
-        this.foodService = foodService;
+    public IngredientsController(IngredientsService ingredientsService) {
+        this.ingredientsService = ingredientsService;
     }
 
     @GetMapping("/search")
     public ResponseEntity<List<FoodItemResponseDto>> searchFood(@RequestParam("query") String foodName) {
-        List<FoodItemResponseDto> result = foodService.searchFoodItems(foodName);
+        List<FoodItemResponseDto> result = ingredientsService.searchFoodItems(foodName);
 
         return ResponseEntity.ok(result);
     }
