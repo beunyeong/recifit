@@ -17,6 +17,7 @@ public class IngredientsController {
         this.ingredientsService = ingredientsService;
     }
 
+
     @GetMapping("/search")
     public ResponseEntity<List<FoodItemResponseDto>> searchFood(@RequestParam("query") String foodName) {
         List<FoodItemResponseDto> result = ingredientsService.searchFoodItems(foodName);
