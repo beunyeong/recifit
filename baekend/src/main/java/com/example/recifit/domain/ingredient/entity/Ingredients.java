@@ -1,6 +1,7 @@
 package com.example.recifit.domain.ingredient.entity;
 
 import com.example.recifit.domain.ingredient.enums.StorageLocation;
+import com.example.recifit.domain.member.entity.Member;
 import com.example.recifit.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -25,13 +26,18 @@ public class Ingredients extends BaseEntity {
 
     private LocalDate storageDate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Member member;
+
     public Ingredients(Long id, String name, String description,
-                       StorageLocation storageLocation, LocalDate storageDate) {
+                       StorageLocation storageLocation, LocalDate storageDate,
+                       Member member) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.storageLocation = storageLocation;
         this.storageDate = storageDate;
+        this.member = member;
     }
 
     public Ingredients() {}
