@@ -16,7 +16,7 @@ public class Ingredients extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String ingredientName;
+    private String name;
 
     private String description;
 
@@ -25,10 +25,10 @@ public class Ingredients extends BaseEntity {
 
     private LocalDate storageDate;
 
-    public Ingredients(Long id, String ingredientName, String description,
+    public Ingredients(Long id, String name, String description,
                        StorageLocation storageLocation, LocalDate storageDate) {
         this.id = id;
-        this.ingredientName = ingredientName;
+        this.name = name;
         this.description = description;
         this.storageLocation = storageLocation;
         this.storageDate = storageDate;

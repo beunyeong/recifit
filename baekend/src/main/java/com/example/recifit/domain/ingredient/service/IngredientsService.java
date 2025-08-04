@@ -37,7 +37,7 @@ public class IngredientsService {
         }
 
         Ingredients ingredients = Ingredients.builder()
-                .ingredientName(ingredientRequestDto.getIngredientName())
+                .name(ingredientRequestDto.getIngredientName())
                 .description(ingredientRequestDto.getDescription())
                 .storageLocation(ingredientRequestDto.getStorageLocation())
                 .storageDate(ingredientRequestDto.getStorageDate())
