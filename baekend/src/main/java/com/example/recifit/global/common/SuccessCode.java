@@ -14,7 +14,13 @@ public enum SuccessCode {
     /**
      * INGREDIENT 관련 Code
      */
-    ADD_INGREDIENT_SUCCESS("재료가 등록되었습니다.");
+    ADD_INGREDIENT_SUCCESS("재료가 등록되었습니다."),
+
+    /**
+     * AI 레시피 추천 관련 Code
+     */
+    AI_RECIPE_SUCCESS("AI 레시피 추천 성공");
+
 
 
     private final String message;
