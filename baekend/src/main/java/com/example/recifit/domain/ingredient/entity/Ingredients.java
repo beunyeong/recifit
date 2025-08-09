@@ -26,17 +26,20 @@ public class Ingredients extends BaseEntity {
 
     private LocalDate storageDate;
 
+    private LocalDate expirationDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private Member member;
 
     public Ingredients(Long id, String name, String description,
                        StorageLocation storageLocation, LocalDate storageDate,
-                       Member member) {
+                       LocalDate expirationDate, Member member) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.storageLocation = storageLocation;
         this.storageDate = storageDate;
+        this.expirationDate = expirationDate;
         this.member = member;
     }
 
