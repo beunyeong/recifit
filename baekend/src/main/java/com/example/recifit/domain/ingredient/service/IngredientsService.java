@@ -1,9 +1,6 @@
 package com.example.recifit.domain.ingredient.service;
 
-import com.example.recifit.domain.ingredient.dto.FoodApiItemDto;
-import com.example.recifit.domain.ingredient.dto.FoodApiResponseDto;
-import com.example.recifit.domain.ingredient.dto.FoodItemResponseDto;
-import com.example.recifit.domain.ingredient.dto.IngredientRequestDto;
+import com.example.recifit.domain.ingredient.dto.*;
 import com.example.recifit.domain.ingredient.entity.Ingredients;
 import com.example.recifit.domain.ingredient.repository.IngredientsRepository;
 import com.example.recifit.domain.member.entity.Member;
@@ -41,7 +38,9 @@ public class IngredientsService {
         if (ingredientRequestDto.getStorageDate().isAfter(LocalDate.now())) {
             throw new CustomException(ErrorCode.INVALID_STORAGE_DATE);
         }
-
+        if (ingredientRequestDto.getExpirationDate().isBefore(LocalDate.now())) {
+            throw new CustomException(ErrorCode.INVALID_EXPIRATION_DATE);
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
 
@@ -53,6 +52,7 @@ public class IngredientsService {
                 .description(ingredientRequestDto.getDescription())
                 .storageLocation(ingredientRequestDto.getStorageLocation())
                 .storageDate(ingredientRequestDto.getStorageDate())
+                .expirationDate(ingredientRequestDto.getExpirationDate())
                 .member(member)
                 .build();
 
