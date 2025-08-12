@@ -70,12 +70,15 @@ public class JwtProvider {
     /**
      * 2. 토큰 유효성 검사
      */
-    public boolean validateToken(String token) {
+    public boolean validateTokenOrThrow(String token) {
         try {
-            Jwts.parser().setSigningKey(key).build().parseClaimsJws(token);
+            Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token);
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
+        } catch (JwtException | IllegalArgumentException exception) {
+            throw  exception;
         }
     }
 
@@ -84,9 +87,9 @@ public class JwtProvider {
      */
     public String getEmailFromToken(String token) {
         return Jwts.parser()
-                .setSigningKey(key)
+                .verifyWith(key)
                 .build()
-                .parseClaimsJws(token)
+                .parseSignedClaims(token)
                 .getBody()
                 .getSubject();
     }

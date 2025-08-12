@@ -14,7 +14,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins(
                         "http://localhost:3000", // 개발 환경
-                        "https://localhost:8080", // 테스트용 (필요 시)
+                        "http://localhost:8080", // 테스트용 (필요 시)
                         "https://recifit.co.kr", "https://www.recifit.co.kr" // 실제 운영 도메인
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
