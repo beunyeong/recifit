@@ -17,6 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -86,5 +88,41 @@ public class IngredientsService {
                         item.getAmtNum1(),
                         item.getAmtNum2()
                 )).collect(Collectors.toList());
+    }
+
+    public List<IngredientResponseDto> getMyIngredients(Long memberId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        List<Ingredients> withExpiry = ingredientsRepository
+                .findAllWithExpiryByMemberOrderByExpiryAsc(member.getId());
+        List<Ingredients> withoutExpiry = ingredientsRepository
+                .findAllWithoutExpiryByMember(member.getId());
+
+        List<Ingredients> all = new ArrayList<>(withExpiry.size() + withoutExpiry.size());
+        all.addAll(withExpiry);
+        all.addAll(withoutExpiry);
+
+        LocalDate currentDate = LocalDate.now();
+        return all.stream().map(ingredient -> toDto(ingredient, currentDate)).toList();
+    }
+
+    private IngredientResponseDto toDto(Ingredients ingredient, LocalDate currentDate) {
+        Integer remainingDays = null;
+        if (ingredient.getExpirationDate() != null) {
+            remainingDays = (int) ChronoUnit.DAYS.between(currentDate, ingredient.getExpirationDate());
+        }
+        return IngredientResponseDto.builder()
+                .id(ingredient.getId())
+                .ingredientName(ingredient.getName())
+                .description(ingredient.getDescription())
+                .storageLocation(ingredient.getStorageLocation())
+                .storageDate(ingredient.getStorageDate())
+                .expirationDate(ingredient.getExpirationDate())
+                .daysLeft(remainingDays)
+                .build();
     }
 }
