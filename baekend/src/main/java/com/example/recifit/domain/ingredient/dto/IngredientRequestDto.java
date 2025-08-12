@@ -20,4 +20,13 @@ public class IngredientRequestDto {
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate expirationDate;
+
+    public IngredientRequestDto(String ingredientName, String description, StorageLocation storageLocation,
+                                LocalDate storageDate, LocalDate expirationDate) {
+        this.ingredientName = ingredientName;
+        this.description = description;
+        this.storageLocation = storageLocation;
+        this.storageDate = storageDate;
+        this.expirationDate = expirationDate;
+    }
 }
