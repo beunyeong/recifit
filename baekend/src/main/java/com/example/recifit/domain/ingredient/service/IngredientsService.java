@@ -122,7 +122,7 @@ public class IngredientsService {
                 .storageLocation(ingredient.getStorageLocation())
                 .storageDate(ingredient.getStorageDate())
                 .expirationDate(ingredient.getExpirationDate())
-                .daysLeft(remainingDays)
+                .remainingDays(remainingDays)
                 .build();
     }
 }
