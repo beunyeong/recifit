@@ -4,6 +4,7 @@ import com.example.recifit.domain.member.enums.CookingLevel;
 import com.example.recifit.domain.member.enums.MemberType;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -20,6 +21,6 @@ public class RecipeRequestDto {
     private String recipeId;
 
     public void setAvailableIngredients(List<String> ingredients) {
-        this.availableIngredients = ingredients;
+        this.availableIngredients = (ingredients == null) ? new ArrayList<>() : ingredients;
     }
 }
