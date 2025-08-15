@@ -30,7 +30,7 @@ public class FoodApiClient {
         StringBuilder url = new StringBuilder(baseUrl);
         url.append("?serviceKey=").append(serviceKey);
         url.append("&FOOD_NM_KR=").append(URLEncoder.encode(foodName, StandardCharsets.UTF_8));
-        url.append("&pageNo=1&numOfRows=50&type=xml");
+        url.append("&pageNo=1&numOfRows=30&type=xml");
 
         log.info("실제 요청 URL: {}", url);
 

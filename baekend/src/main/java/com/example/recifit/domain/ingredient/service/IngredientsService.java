@@ -1,25 +1,23 @@
 package com.example.recifit.domain.ingredient.service;
 
-import com.example.recifit.domain.ingredient.dto.FoodApiItemDto;
-import com.example.recifit.domain.ingredient.dto.FoodApiResponseDto;
-import com.example.recifit.domain.ingredient.dto.FoodItemResponseDto;
-import com.example.recifit.domain.ingredient.dto.IngredientRequestDto;
+import com.example.recifit.domain.ingredient.dto.*;
 import com.example.recifit.domain.ingredient.entity.Ingredients;
+import com.example.recifit.domain.ingredient.enums.IngredientsStatus;
 import com.example.recifit.domain.ingredient.repository.IngredientsRepository;
 import com.example.recifit.domain.member.entity.Member;
 import com.example.recifit.domain.member.repository.MemberRepository;
 import com.example.recifit.global.client.FoodApiClient;
-import com.example.recifit.global.common.CommonResponseDto;
-import com.example.recifit.global.common.SuccessCode;
 import com.example.recifit.global.error.errorcode.ErrorCode;
 import com.example.recifit.global.error.exception.CustomException;
 import com.example.recifit.global.util.XmlUtil;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,16 +34,16 @@ public class IngredientsService {
         this.memberRepository = memberRepository;
     }
 
-    public ResponseEntity<CommonResponseDto<String>> addIngredient(IngredientRequestDto ingredientRequestDto) {
+    public void addIngredient(IngredientRequestDto ingredientRequestDto, Long memberId) {
 
         if (ingredientRequestDto.getStorageDate().isAfter(LocalDate.now())) {
             throw new CustomException(ErrorCode.INVALID_STORAGE_DATE);
         }
+        if (ingredientRequestDto.getExpirationDate().isBefore(LocalDate.now())) {
+            throw new CustomException(ErrorCode.INVALID_EXPIRATION_DATE);
+        }
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = authentication.getName();
-
-        Member member = memberRepository.findByEmail(userEmail)
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         Ingredients ingredients = Ingredients.builder()
@@ -53,12 +51,12 @@ public class IngredientsService {
                 .description(ingredientRequestDto.getDescription())
                 .storageLocation(ingredientRequestDto.getStorageLocation())
                 .storageDate(ingredientRequestDto.getStorageDate())
+                .expirationDate(ingredientRequestDto.getExpirationDate())
+                .ingredientsStatus(IngredientsStatus.AVAILABLE)
                 .member(member)
                 .build();
 
         ingredientsRepository.save(ingredients);
-
-        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.ADD_INGREDIENT_SUCCESS, null));
     }
 
     public List<FoodItemResponseDto> searchFoodItems(String foodName) {
@@ -86,5 +84,48 @@ public class IngredientsService {
                         item.getAmtNum1(),
                         item.getAmtNum2()
                 )).collect(Collectors.toList());
+    }
+
+    public List<IngredientResponseDto> getMyIngredients(Long memberId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        List<Ingredients> withExpiry = ingredientsRepository
+                .findAllWithExpiryByMemberOrderByExpiryAsc(member.getId());
+        List<Ingredients> withoutExpiry = ingredientsRepository
+                .findAllWithoutExpiryByMember(member.getId());
+
+        List<Ingredients> all = new ArrayList<>(withExpiry.size() + withoutExpiry.size());
+        all.addAll(withExpiry);
+        all.addAll(withoutExpiry);
+
+        LocalDate currentDate = LocalDate.now();
+        return all.stream().map(ingredient -> toDto(ingredient, currentDate)).toList();
+    }
+
+    private IngredientResponseDto toDto(Ingredients ingredient, LocalDate currentDate) {
+        Integer remainingDays = null;
+        if (ingredient.getExpirationDate() != null) {
+            remainingDays = (int) ChronoUnit.DAYS.between(currentDate, ingredient.getExpirationDate());
+        }
+        return IngredientResponseDto.builder()
+                .id(ingredient.getId())
+                .ingredientName(ingredient.getName())
+                .description(ingredient.getDescription())
+                .storageLocation(ingredient.getStorageLocation())
+                .storageDate(ingredient.getStorageDate())
+                .expirationDate(ingredient.getExpirationDate())
+                .remainingDays(remainingDays)
+                .build();
+    }
+
+    @Transactional
+    public void deleteIngredient(Long id, Long memberId) {
+        Ingredients ingredient = ingredientsRepository.findByIdAndMemberId(id, memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.INGREDIENT_NOT_FOUND));
+        ingredient.deleteIngredients();
     }
 }

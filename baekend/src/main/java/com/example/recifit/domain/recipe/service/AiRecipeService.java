@@ -43,11 +43,13 @@ public class AiRecipeService {
             recipeRequestDto.setAvailableIngredients(ingredients);
         }
         PromptTemplate promptTemplate = new PromptTemplate(getRecipePrompt);
+        List<String> expiringIngredientsList = recipeRequestDto.getExpiringIngredients();
+
         Map<String, Object> variables = Map.of(
                 "memberType", recipeRequestDto.getMemberType().name().toLowerCase(),
                 "cookingLevel", recipeRequestDto.getCookingLevel().name().toLowerCase(),
                 "availableIngredients", String.join(", ", recipeRequestDto.getAvailableIngredients()),
-                "expiringIngredients", recipeRequestDto.getExpiringIngredients().isEmpty() ? "none" : String.join(", ", recipeRequestDto.getExpiringIngredients())
+                "expiringIngredients", (expiringIngredientsList == null || expiringIngredientsList.isEmpty()) ? "none" : String.join(", ", expiringIngredientsList)
         );
         Prompt prompt = promptTemplate.create(variables);
         String content = chatClient.prompt(prompt).call().content();
