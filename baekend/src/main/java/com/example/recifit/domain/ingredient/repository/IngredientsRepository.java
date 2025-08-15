@@ -18,7 +18,9 @@ public interface IngredientsRepository extends JpaRepository<Ingredients, Long> 
     @Query("""
         select i
         from Ingredients i
-        where i.member.id = :memberId and i.expirationDate is not null
+        where i.member.id = :memberId 
+             and i.deletedAt is null
+             and i.expirationDate is not null
         order by i.member.id asc
         """)
     List<Ingredients> findAllWithExpiryByMemberOrderByExpiryAsc(@Param("memberId") Long memberId);
@@ -29,7 +31,9 @@ public interface IngredientsRepository extends JpaRepository<Ingredients, Long> 
     @Query("""
         select i
         from Ingredients i
-        where i.member.id = :memberId and i.expirationDate is null
+        where i.member.id = :memberId 
+             and i.deletedAt is null
+             and i.expirationDate is null
         """)
     List<Ingredients> findAllWithoutExpiryByMember(@Param("memberId") Long memberId);
 
