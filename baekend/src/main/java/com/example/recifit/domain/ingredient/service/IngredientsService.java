@@ -2,16 +2,14 @@ package com.example.recifit.domain.ingredient.service;
 
 import com.example.recifit.domain.ingredient.dto.*;
 import com.example.recifit.domain.ingredient.entity.Ingredients;
+import com.example.recifit.domain.ingredient.enums.IngredientsStatus;
 import com.example.recifit.domain.ingredient.repository.IngredientsRepository;
 import com.example.recifit.domain.member.entity.Member;
 import com.example.recifit.domain.member.repository.MemberRepository;
 import com.example.recifit.global.client.FoodApiClient;
-import com.example.recifit.global.common.CommonResponseDto;
-import com.example.recifit.global.common.SuccessCode;
 import com.example.recifit.global.error.errorcode.ErrorCode;
 import com.example.recifit.global.error.exception.CustomException;
 import com.example.recifit.global.util.XmlUtil;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +34,7 @@ public class IngredientsService {
         this.memberRepository = memberRepository;
     }
 
-    public ResponseEntity<CommonResponseDto<String>> addIngredient(IngredientRequestDto ingredientRequestDto) {
+    public void addIngredient(IngredientRequestDto ingredientRequestDto, Long memberId) {
 
         if (ingredientRequestDto.getStorageDate().isAfter(LocalDate.now())) {
             throw new CustomException(ErrorCode.INVALID_STORAGE_DATE);
@@ -44,10 +42,8 @@ public class IngredientsService {
         if (ingredientRequestDto.getExpirationDate().isBefore(LocalDate.now())) {
             throw new CustomException(ErrorCode.INVALID_EXPIRATION_DATE);
         }
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = authentication.getName();
 
-        Member member = memberRepository.findByEmail(userEmail)
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         Ingredients ingredients = Ingredients.builder()
@@ -56,12 +52,11 @@ public class IngredientsService {
                 .storageLocation(ingredientRequestDto.getStorageLocation())
                 .storageDate(ingredientRequestDto.getStorageDate())
                 .expirationDate(ingredientRequestDto.getExpirationDate())
+                .ingredientsStatus(IngredientsStatus.AVAILABLE)
                 .member(member)
                 .build();
 
         ingredientsRepository.save(ingredients);
-
-        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.ADD_INGREDIENT_SUCCESS, null));
     }
 
     public List<FoodItemResponseDto> searchFoodItems(String foodName) {
