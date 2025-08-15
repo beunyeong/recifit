@@ -5,6 +5,7 @@ import com.example.recifit.domain.ingredient.dto.IngredientRequestDto;
 import com.example.recifit.domain.ingredient.dto.IngredientResponseDto;
 import com.example.recifit.domain.ingredient.service.IngredientsService;
 import com.example.recifit.global.common.CommonResponseDto;
+import com.example.recifit.global.common.SuccessCode;
 import com.example.recifit.global.security.MemberDetailsImpl;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ public class IngredientsController {
         return ingredientsService.addIngredient(ingredientRequestDto);
     }
 
+    // TODO: searchFood -> searchIngredients으로 수정 필요
     @GetMapping("/search")
     public ResponseEntity<List<FoodItemResponseDto>> searchFood(@RequestParam("query") String foodName) {
         List<FoodItemResponseDto> result = ingredientsService.searchFoodItems(foodName);
@@ -44,5 +46,13 @@ public class IngredientsController {
         List<IngredientResponseDto> result = ingredientsService.getMyIngredients(memberId);
 
         return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<CommonResponseDto<String>> deleteIngredient(@PathVariable Long id, @AuthenticationPrincipal MemberDetailsImpl memberDetailsImpl) {
+        ingredientsService.deleteIngredient(id, memberDetailsImpl.getMember().getId());
+
+        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.DELETE_INGREDIENT_SUCCESS, null));
+
     }
 }

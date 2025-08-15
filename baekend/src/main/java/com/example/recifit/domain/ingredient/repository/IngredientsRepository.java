@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface IngredientsRepository extends JpaRepository<Ingredients, Long> {
 
@@ -31,4 +32,6 @@ public interface IngredientsRepository extends JpaRepository<Ingredients, Long> 
         where i.member.id = :memberId and i.expirationDate is null
         """)
     List<Ingredients> findAllWithoutExpiryByMember(@Param("memberId") Long memberId);
+
+    Optional<Ingredients> findByIdAndMemberId(Long id, Long memberId);
 }

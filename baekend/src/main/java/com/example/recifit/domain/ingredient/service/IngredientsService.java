@@ -14,6 +14,7 @@ import com.example.recifit.global.util.XmlUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -124,5 +125,12 @@ public class IngredientsService {
                 .expirationDate(ingredient.getExpirationDate())
                 .remainingDays(remainingDays)
                 .build();
+    }
+
+    @Transactional
+    public void deleteIngredient(Long id, Long memberId) {
+        Ingredients ingredient = ingredientsRepository.findByIdAndMemberId(id, memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.INGREDIENT_NOT_FOUND));
+        ingredient.deleteIngredients();
     }
 }

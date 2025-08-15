@@ -16,6 +16,7 @@ public enum SuccessCode {
      */
     ADD_INGREDIENT_SUCCESS("재료가 등록되었습니다."),
     GET_INGREDIENTS_SUCCESS("보유 재료 목록 불러오기 완료"),
+    DELETE_INGREDIENT_SUCCESS("보유 재료가 정상적으로 삭제 되었습니다."),
 
 
     /**

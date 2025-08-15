@@ -26,6 +26,7 @@ public enum ErrorCode {
      * 404 NOT_FOUND
      */
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "멤버 정보를 찾을 수 없습니다."),
+    INGREDIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "재료를 찾을 수 없습니다."),
 
     /**
      * 500 INTERNAL_SERVER_ERROR
