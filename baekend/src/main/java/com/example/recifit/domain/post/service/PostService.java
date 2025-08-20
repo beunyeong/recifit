@@ -1,0 +1,51 @@
+package com.example.recifit.domain.post.service;
+
+
+import com.example.recifit.domain.member.entity.Member;
+import com.example.recifit.domain.member.repository.MemberRepository;
+import com.example.recifit.domain.post.dto.PostRequestDto;
+import com.example.recifit.domain.post.dto.PostResponseDto;
+import com.example.recifit.domain.post.entity.Post;
+import com.example.recifit.domain.post.repository.PostRepository;
+import com.example.recifit.global.error.errorcode.ErrorCode;
+import com.example.recifit.global.error.exception.CustomException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+@Service
+@Slf4j
+public class PostService {
+
+    private final PostRepository postRepository;
+    private final MemberRepository memberRepository;
+
+    public PostService(PostRepository postRepository, MemberRepository memberRepository) {
+        this.postRepository = postRepository;
+        this.memberRepository = memberRepository;
+    }
+
+    public PostResponseDto addPost(PostRequestDto postRequestDto, Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        Post post = Post.builder()
+                .title(postRequestDto.getTitle())
+                .content(postRequestDto.getContent())
+                .name(member.getNickname())
+                .postCategory(postRequestDto.getPostCategory())
+                .member(member)
+                .build();
+        postRepository.save(post);
+
+        log.info("저장된 게시글 카테고리: {}", post.getPostCategory());
+
+        return new PostResponseDto(
+                post.getPostCategory(),
+                post.getId(),
+                post.getTitle(),
+                post.getContent(),
+                post.getName(),
+                post.getLikeCount(),
+                post.getCommentCount());
+    }
+}
