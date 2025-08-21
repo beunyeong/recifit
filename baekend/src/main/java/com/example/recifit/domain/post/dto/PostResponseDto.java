@@ -3,6 +3,8 @@ package com.example.recifit.domain.post.dto;
 import com.example.recifit.domain.post.enums.PostCategory;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 public class PostResponseDto {
 
@@ -20,9 +22,11 @@ public class PostResponseDto {
 
     private int commentCount;
 
+    private LocalDateTime createdAt;
+
     public PostResponseDto(Long id, PostCategory postCategory, String title,
-                           String content, String nickname,
-                           int likeCount, int commentCount) {
+                           String content, String nickname, int likeCount,
+                           int commentCount, LocalDateTime createdAt) {
         this.id = id;
         this.postCategory = postCategory;
         this.title = title;
@@ -30,5 +34,6 @@ public class PostResponseDto {
         this.nickname = nickname;
         this.likeCount = likeCount;
         this.commentCount = commentCount;
+        this.createdAt = createdAt;
     }
 }
