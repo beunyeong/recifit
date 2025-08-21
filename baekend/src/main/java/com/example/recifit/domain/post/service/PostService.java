@@ -73,10 +73,15 @@ public class PostService {
         );
     }
 
-    public List<PostResponseDto> getposts(PostCategory postCategory) {
-        List<Post> posts = (postCategory == null)
-                ? postRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc()
-                : postRepository.findAllByPostCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(postCategory);
+    public List<PostResponseDto> getposts(PostCategory postCategory, Long memberId) {
+        List<Post> posts;
+        if(memberId == null && postCategory == null) {
+            posts = postRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc();
+        } else if(memberId == null) {
+            posts = postRepository.findAllByPostCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(postCategory);
+        } else {
+            posts = postRepository.findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId);
+        }
 
         return posts
                 .stream()

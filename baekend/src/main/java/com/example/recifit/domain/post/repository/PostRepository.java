@@ -17,4 +17,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * 카테고리별(최신순)
      */
     List<Post> findAllByPostCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(PostCategory postCategory);
+
+    /**
+     * 로그인된 사용자가 작성한 게시글 조회(최신순)
+     */
+    List<Post> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long memberId);
 }

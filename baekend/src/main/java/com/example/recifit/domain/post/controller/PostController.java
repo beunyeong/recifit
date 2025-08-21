@@ -47,8 +47,12 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<CommonResponseDto<List<PostResponseDto>>> getAllPost(PostCategory postCategory) {
-        List<PostResponseDto> result = postService.getposts(postCategory);
+    public ResponseEntity<CommonResponseDto<List<PostResponseDto>>> getAllPost(PostCategory postCategory,
+                                                                               @AuthenticationPrincipal MemberDetailsImpl memberDetailsImpl,
+                                                                               @RequestParam(value = "mine", defaultValue = "false") boolean mine) {
+        Long memberId = (mine ? memberDetailsImpl.getMember().getId() : null);
+
+        List<PostResponseDto> result = postService.getposts(postCategory, memberId);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.GET_POST_SUCCESS, result));
     }
