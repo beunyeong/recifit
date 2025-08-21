@@ -20,10 +20,11 @@ public class PostResponseDto {
 
     private int commentCount;
 
-    public PostResponseDto(PostCategory postCategory, Long id, String title, String content,
-                           String nickname, int likeCount, int commentCount) {
-        this.postCategory = postCategory;
+    public PostResponseDto(Long id, PostCategory postCategory, String title,
+                           String content, String nickname,
+                           int likeCount, int commentCount) {
         this.id = id;
+        this.postCategory = postCategory;
         this.title = title;
         this.content = content;
         this.nickname = nickname;
