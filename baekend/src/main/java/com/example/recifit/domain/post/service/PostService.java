@@ -5,12 +5,15 @@ import com.example.recifit.domain.member.entity.Member;
 import com.example.recifit.domain.member.repository.MemberRepository;
 import com.example.recifit.domain.post.dto.PostRequestDto;
 import com.example.recifit.domain.post.dto.PostResponseDto;
+import com.example.recifit.domain.post.dto.UpdatePostRequestDto;
+import com.example.recifit.domain.post.dto.UpdatePostResponseDto;
 import com.example.recifit.domain.post.entity.Post;
 import com.example.recifit.domain.post.repository.PostRepository;
 import com.example.recifit.global.error.errorcode.ErrorCode;
 import com.example.recifit.global.error.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -47,5 +50,23 @@ public class PostService {
                 post.getName(),
                 post.getLikeCount(),
                 post.getCommentCount());
+    }
+
+    @Transactional
+    public UpdatePostResponseDto updatePost(Long memberId, Long postId, UpdatePostRequestDto updatePostRequestDto) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        post.update(updatePostRequestDto.getTitle(), updatePostRequestDto.getContent());
+
+        if(!post.getMember().getId().equals(memberId)) {
+            throw new CustomException(ErrorCode.NO_POST_MODIFY_PERMISSION);
+        }
+
+        return new UpdatePostResponseDto(
+                post.getId(),
+                post.getTitle(),
+                post.getContent()
+        );
     }
 }

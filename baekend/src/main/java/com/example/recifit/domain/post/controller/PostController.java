@@ -2,6 +2,8 @@ package com.example.recifit.domain.post.controller;
 
 import com.example.recifit.domain.post.dto.PostRequestDto;
 import com.example.recifit.domain.post.dto.PostResponseDto;
+import com.example.recifit.domain.post.dto.UpdatePostRequestDto;
+import com.example.recifit.domain.post.dto.UpdatePostResponseDto;
 import com.example.recifit.domain.post.service.PostService;
 import com.example.recifit.global.common.CommonResponseDto;
 import com.example.recifit.global.common.SuccessCode;
@@ -29,5 +31,15 @@ public class PostController {
         PostResponseDto postResponseDto = postService.addPost(postRequestDto, memberId);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.ADD_POST_SUCCESS, postResponseDto));
+    }
+
+    @PatchMapping("/{postId}")
+    public ResponseEntity<CommonResponseDto<UpdatePostResponseDto>> updatePost(@PathVariable Long postId,
+                                                                               @RequestBody UpdatePostRequestDto updatePostRequestDto,
+                                                                               @AuthenticationPrincipal MemberDetailsImpl memberDetailsImpl) {
+        Long memberId = memberDetailsImpl.getMember().getId();
+        UpdatePostResponseDto postResponseDto = postService.updatePost(memberId, postId, updatePostRequestDto);
+
+        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.UPDATE_POST_SUCCESS, postResponseDto));
     }
 }
