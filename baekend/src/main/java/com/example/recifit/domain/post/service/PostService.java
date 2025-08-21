@@ -52,7 +52,8 @@ public class PostService {
                 post.getContent(),
                 post.getName(),
                 post.getLikeCount(),
-                post.getCommentCount());
+                post.getCommentCount(),
+                post.getCreatedAt());
     }
 
     @Transactional
@@ -97,7 +98,18 @@ public class PostService {
                 post.getContent(),
                 post.getMember().getNickname(),
                 post.getLikeCount(),
-                post.getCommentCount()
+                post.getCommentCount(),
+                post.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public void deletePost(Long postId, Long memberId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        if(!post.getMember().getId().equals(memberId)) {
+            throw new CustomException(ErrorCode.NO_DELETE_MODIFY_PERMISSION);
+        }
+        post.softDelete();
     }
 }

@@ -26,6 +26,7 @@ public enum ErrorCode {
      * 403 FORBIDDEN
      */
     NO_POST_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "본인이 작성한 게시글만 수정할 수 있습니다."),
+    NO_DELETE_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "본인이 작성한 게시글만 삭제할 수 있습니다."),
 
 
     /**
