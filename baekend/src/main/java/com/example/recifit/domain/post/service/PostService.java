@@ -8,12 +8,15 @@ import com.example.recifit.domain.post.dto.PostResponseDto;
 import com.example.recifit.domain.post.dto.UpdatePostRequestDto;
 import com.example.recifit.domain.post.dto.UpdatePostResponseDto;
 import com.example.recifit.domain.post.entity.Post;
+import com.example.recifit.domain.post.enums.PostCategory;
 import com.example.recifit.domain.post.repository.PostRepository;
 import com.example.recifit.global.error.errorcode.ErrorCode;
 import com.example.recifit.global.error.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -43,8 +46,8 @@ public class PostService {
         log.info("저장된 게시글 카테고리: {}", post.getPostCategory());
 
         return new PostResponseDto(
-                post.getPostCategory(),
                 post.getId(),
+                post.getPostCategory(),
                 post.getTitle(),
                 post.getContent(),
                 post.getName(),
@@ -67,6 +70,29 @@ public class PostService {
                 post.getId(),
                 post.getTitle(),
                 post.getContent()
+        );
+    }
+
+    public List<PostResponseDto> getposts(PostCategory postCategory) {
+        List<Post> posts = (postCategory == null)
+                ? postRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc()
+                : postRepository.findAllByPostCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(postCategory);
+
+        return posts
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    private PostResponseDto toDto(Post post) {
+        return new PostResponseDto(
+                post.getId(),
+                post.getPostCategory(),
+                post.getTitle(),
+                post.getContent(),
+                post.getMember().getNickname(),
+                post.getLikeCount(),
+                post.getCommentCount()
         );
     }
 }

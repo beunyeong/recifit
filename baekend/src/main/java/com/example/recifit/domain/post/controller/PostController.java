@@ -4,6 +4,7 @@ import com.example.recifit.domain.post.dto.PostRequestDto;
 import com.example.recifit.domain.post.dto.PostResponseDto;
 import com.example.recifit.domain.post.dto.UpdatePostRequestDto;
 import com.example.recifit.domain.post.dto.UpdatePostResponseDto;
+import com.example.recifit.domain.post.enums.PostCategory;
 import com.example.recifit.domain.post.service.PostService;
 import com.example.recifit.global.common.CommonResponseDto;
 import com.example.recifit.global.common.SuccessCode;
@@ -12,6 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/posts")
@@ -41,5 +44,12 @@ public class PostController {
         UpdatePostResponseDto postResponseDto = postService.updatePost(memberId, postId, updatePostRequestDto);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.UPDATE_POST_SUCCESS, postResponseDto));
+    }
+
+    @GetMapping
+    public ResponseEntity<CommonResponseDto<List<PostResponseDto>>> getAllPost(PostCategory postCategory) {
+        List<PostResponseDto> result = postService.getposts(postCategory);
+
+        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.GET_POST_SUCCESS, result));
     }
 }
