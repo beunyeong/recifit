@@ -50,12 +50,13 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<CommonResponseDto<Page<PostResponseDto>>> getAllPost(PostCategory postCategory,
+    public ResponseEntity<CommonResponseDto<Page<PostResponseDto>>> getAllPost(@RequestParam(required = false) PostCategory postCategory,
                                                                                @AuthenticationPrincipal MemberDetailsImpl memberDetailsImpl,
                                                                                @RequestParam(value = "mine", defaultValue = "false") boolean mine,
                                                                                @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Long memberId = (mine && memberDetailsImpl != null) ? memberDetailsImpl.getMember().getId() : null;
-        Page<PostResponseDto> result = postService.getposts(postCategory, memberId, pageable);
+        Long currentMemberId = (memberDetailsImpl != null) ? memberDetailsImpl.getMember().getId() : null;
+        Long memberId = mine ? currentMemberId : null;
+        Page<PostResponseDto> result = postService.getposts(postCategory, memberId, pageable, currentMemberId);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.GET_POST_SUCCESS, result));
     }

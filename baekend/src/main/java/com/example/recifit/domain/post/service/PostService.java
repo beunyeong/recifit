@@ -48,13 +48,16 @@ public class PostService {
 
         return new PostResponseDto(
                 post.getId(),
+                post.getMember().getId(),
                 post.getPostCategory(),
                 post.getTitle(),
                 post.getContent(),
                 post.getName(),
                 post.getLikeCount(),
                 post.getCommentCount(),
-                post.getCreatedAt());
+                post.getCreatedAt(),
+                true
+        );
     }
 
     @Transactional
@@ -62,11 +65,11 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
-        post.update(updatePostRequestDto.getTitle(), updatePostRequestDto.getContent());
-
         if(!post.getMember().getId().equals(memberId)) {
             throw new CustomException(ErrorCode.NO_POST_MODIFY_PERMISSION);
         }
+
+        post.update(updatePostRequestDto.getTitle(), updatePostRequestDto.getContent());
 
         return new UpdatePostResponseDto(
                 post.getId(),
@@ -75,7 +78,7 @@ public class PostService {
         );
     }
 
-    public Page<PostResponseDto> getposts(PostCategory postCategory, Long memberId, Pageable pageable) {
+    public Page<PostResponseDto> getposts(PostCategory postCategory, Long memberId, Pageable pageable, Long currentMemberId) {
         Page<Post> posts;
         if(memberId == null && postCategory == null) {
             posts = postRepository.findAllByDeletedAtIsNull(pageable);
@@ -85,19 +88,22 @@ public class PostService {
             posts = postRepository.findAllByMemberIdAndDeletedAtIsNull(memberId, pageable);
         }
 
-        return posts.map(this::toDto);
+        return posts.map(post -> toDto(post, currentMemberId));
     }
 
-    private PostResponseDto toDto(Post post) {
+    private PostResponseDto toDto(Post post, Long currentMemberId) {
+        boolean mine = (currentMemberId != null && currentMemberId.equals(post.getMember().getId()));
         return new PostResponseDto(
                 post.getId(),
+                post.getMember().getId(),
                 post.getPostCategory(),
                 post.getTitle(),
                 post.getContent(),
                 post.getMember().getNickname(),
                 post.getLikeCount(),
                 post.getCommentCount(),
-                post.getCreatedAt()
+                post.getCreatedAt(),
+                mine
         );
     }
 
