@@ -1,38 +1,51 @@
 import 'package:flutter/material.dart';
-import 'lib/screens/ingredient_search_screen.dart';
-import 'lib/screens/signup_screen.dart';
-import 'lib/screens/login_screen.dart';
+import 'package:recifit_app/services/api_service.dart';
+import 'package:recifit_app/screens/main/splash_screen.dart';
+import 'package:recifit_app/screens/auth/signup_screen.dart';
+import 'package:recifit_app/screens/auth/login_screen.dart';
+import 'package:recifit_app/screens/main/main_screen.dart';
+import 'package:recifit_app/screens/ingredient/ingredient_add_screen.dart';
+import 'package:recifit_app/screens/mypage/recipe_recommend_screen.dart';
+import 'package:recifit_app/screens/mypage/mypage_placeholder.dart';
+import 'package:recifit_app/screens/mypage/coming_soon_screen.dart';
+import 'package:recifit_app/screens/community/community_screen.dart';
+import 'package:recifit_app/screens/mypage/recipe_memo_list_screen.dart';
+import 'screens/community/write_post_screen.dart';
+import 'package:recifit_app/screens/community/post_detail_screen.dart';
 
-void main() {
-  runApp(MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.instance.init();
+  runApp(const RecifitApp());
 }
 
-class MyApp extends StatefulWidget {
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  String? _accessToken;
-  bool _showSignup = false;
+class RecifitApp extends StatelessWidget {
+  const RecifitApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: _accessToken == null
-          ? (_showSignup
-          ? SignupScreen(onSignupSuccess: () {
-        setState(() => _showSignup = false);
-      })
-          : LoginScreen(
-        onLoginSuccess: (token) {
-          setState(() => _accessToken = token);
-        },
-        onGoToSignup: () {
-          setState(() => _showSignup = true);
-        },
-      ))
-          : IngredientSearchScreen(accessToken: _accessToken!), // 로그인 성공시 검색화면으로!
+      title: 'Recifit',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2ECC71)),
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (_) => const SplashScreen(),
+        '/login': (_) => const LoginScreen(),
+        '/signup': (_) => const SignupScreen(),
+        '/main': (_) => const MainScreen(),
+        '/add': (_) => const IngredientAddScreen(),
+        '/recommendation': (_) => const RecipeRecommendScreen(),
+        '/mypage': (_) => const MyPagePlaceholder(),
+        '/coming': (_) => const ComingSoonScreen(title: '현재 준비중'),
+        '/community': (_) => const CommunityScreen(),
+        '/memos': (_) => const RecipeMemoListScreen(),
+        '/write-post': (context) => const WritePostScreen(),
+        '/post-detail': (ctx) => const PostDetailScreen(),
+      },
     );
   }
 }
