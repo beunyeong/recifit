@@ -61,6 +61,15 @@ public class PostController {
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.GET_POST_SUCCESS, result));
     }
 
+    @GetMapping("/{postId}")
+    public ResponseEntity<CommonResponseDto<PostResponseDto>> getPost(@PathVariable Long postId,
+                                                                      @AuthenticationPrincipal MemberDetailsImpl memberDetailsImpl) {
+        Long memberId = memberDetailsImpl.getMember().getId();
+        PostResponseDto postResponseDto = postService.getPost(postId, memberId);
+
+        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.GET_POST_SUCCESS, postResponseDto));
+    }
+
     @DeleteMapping("/{postId}")
     public ResponseEntity<CommonResponseDto<Void>> deletePost(@PathVariable Long postId,
                                                               @AuthenticationPrincipal MemberDetailsImpl memberDetails) {

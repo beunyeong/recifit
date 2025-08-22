@@ -107,6 +107,13 @@ public class PostService {
         );
     }
 
+    public PostResponseDto getPost(Long postId, Long memberId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        return toDto(post, memberId);
+    }
+
     @Transactional
     public void deletePost(Long postId, Long memberId) {
         Post post = postRepository.findById(postId)
