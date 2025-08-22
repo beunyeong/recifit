@@ -46,7 +46,7 @@
 **1. 메인화면 & 회원가입 & 로그인**  
 계정을 생성하고 로그인하여 나만의 냉장고와 레시피 서비스를 시작합니다.
 
-<img width="4024" height="1934" alt="회원가입 및 로그인 화면" src="https://github.com/user-attachments/assets/349d04a2-7c19-4ca4-8b4b-ba9f610f7953" />
+<img width="3955" height="1934" alt="메인화면, 회원가입, 로그인_250822" src="https://github.com/user-attachments/assets/aba99b69-190f-430d-9f00-c6945af86c75" />
 
 ---------
 
@@ -54,14 +54,15 @@
 - 재료명, 보관 위치, 유통기한을 입력하거나 공공데이터 API를 통해 검색 후 등록합니다.  
 - 등록된 재료는 메인 화면과 AI 추천에 반영됩니다.
 
-<img width="4024" height="1934" alt="재료 추가 화면" src="https://github.com/user-attachments/assets/b25db7f9-cd00-4bd5-aad2-0d5eb2990508" />
+<img width="3955" height="1934" alt="재료 추가_250822" src="https://github.com/user-attachments/assets/bdaf052b-153f-4dcd-9537-4f542f841bb7" />
+
 
 ---------
 
 **3. 재료 현황/삭제**  
 현재 등록된 재료 목록을 확인하고, 불필요하거나 이미 사용한 재료를 삭제합니다.
 
-<img width="4033" height="1934" alt="재료 삭제 화면" src="https://github.com/user-attachments/assets/decc86a8-ff8c-469b-b2c0-431b77c4c26b" />
+<img width="4170" height="2035" alt="재료현황 및 삭제_250822" src="https://github.com/user-attachments/assets/1d79f01b-8f6e-4e14-a2a3-a9b8ae29d2cb" />
 
 ---------
 
