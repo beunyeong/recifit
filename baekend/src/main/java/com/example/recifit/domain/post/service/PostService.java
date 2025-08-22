@@ -12,11 +12,12 @@ import com.example.recifit.domain.post.enums.PostCategory;
 import com.example.recifit.domain.post.repository.PostRepository;
 import com.example.recifit.global.error.errorcode.ErrorCode;
 import com.example.recifit.global.error.exception.CustomException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @Slf4j
@@ -74,20 +75,17 @@ public class PostService {
         );
     }
 
-    public List<PostResponseDto> getposts(PostCategory postCategory, Long memberId) {
-        List<Post> posts;
+    public Page<PostResponseDto> getposts(PostCategory postCategory, Long memberId, Pageable pageable) {
+        Page<Post> posts;
         if(memberId == null && postCategory == null) {
-            posts = postRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc();
+            posts = postRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc(pageable);
         } else if(memberId == null) {
-            posts = postRepository.findAllByPostCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(postCategory);
+            posts = postRepository.findAllByPostCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(postCategory, pageable);
         } else {
-            posts = postRepository.findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId);
+            posts = postRepository.findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId, pageable);
         }
 
-        return posts
-                .stream()
-                .map(this::toDto)
-                .toList();
+        return posts.map(this::toDto);
     }
 
     private PostResponseDto toDto(Post post) {

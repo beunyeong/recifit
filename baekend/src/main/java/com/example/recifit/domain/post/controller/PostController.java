@@ -10,11 +10,14 @@ import com.example.recifit.global.common.CommonResponseDto;
 import com.example.recifit.global.common.SuccessCode;
 import com.example.recifit.global.security.MemberDetailsImpl;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/posts")
@@ -47,12 +50,12 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<CommonResponseDto<List<PostResponseDto>>> getAllPost(PostCategory postCategory,
+    public ResponseEntity<CommonResponseDto<Page<PostResponseDto>>> getAllPost(PostCategory postCategory,
                                                                                @AuthenticationPrincipal MemberDetailsImpl memberDetailsImpl,
-                                                                               @RequestParam(value = "mine", defaultValue = "false") boolean mine) {
-        Long memberId = (mine ? memberDetailsImpl.getMember().getId() : null);
-
-        List<PostResponseDto> result = postService.getposts(postCategory, memberId);
+                                                                               @RequestParam(value = "mine", defaultValue = "false") boolean mine,
+                                                                               @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Long memberId = (mine && memberDetailsImpl != null) ? memberDetailsImpl.getMember().getId() : null;
+        Page<PostResponseDto> result = postService.getposts(postCategory, memberId, pageable);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.GET_POST_SUCCESS, result));
     }
