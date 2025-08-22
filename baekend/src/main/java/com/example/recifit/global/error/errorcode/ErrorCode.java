@@ -23,10 +23,18 @@ public enum ErrorCode {
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
 
     /**
+     * 403 FORBIDDEN
+     */
+    NO_POST_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "본인이 작성한 게시글만 수정할 수 있습니다."),
+    NO_DELETE_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "본인이 작성한 게시글만 삭제할 수 있습니다."),
+
+
+    /**
      * 404 NOT_FOUND
      */
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "멤버 정보를 찾을 수 없습니다."),
     INGREDIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "재료를 찾을 수 없습니다."),
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
 
     /**
      * 500 INTERNAL_SERVER_ERROR

@@ -18,6 +18,14 @@ public enum SuccessCode {
     GET_INGREDIENTS_SUCCESS("보유 재료 목록 불러오기 완료"),
     DELETE_INGREDIENT_SUCCESS("보유 재료가 정상적으로 삭제 되었습니다."),
 
+    /**
+     * 커뮤니티(Post) 관련 Code
+     */
+    ADD_POST_SUCCESS("게시글이 등록되었습니다."),
+    UPDATE_POST_SUCCESS("게시글이 수정되었습니다."),
+    GET_POST_SUCCESS("게시글 조회 완료"),
+    DELETE_POST_SUCCESS("게시글이 삭제되었습니다."),
+
 
     /**
      * AI 레시피 추천 관련 Code
