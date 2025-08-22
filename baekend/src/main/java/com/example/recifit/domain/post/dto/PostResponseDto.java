@@ -1,6 +1,7 @@
 package com.example.recifit.domain.post.dto;
 
 import com.example.recifit.domain.post.enums.PostCategory;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -24,8 +25,8 @@ public class PostResponseDto {
 
     private int commentCount;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
-
 
     private boolean mine;
 
