@@ -78,11 +78,11 @@ public class PostService {
     public Page<PostResponseDto> getposts(PostCategory postCategory, Long memberId, Pageable pageable) {
         Page<Post> posts;
         if(memberId == null && postCategory == null) {
-            posts = postRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc(pageable);
+            posts = postRepository.findAllByDeletedAtIsNull(pageable);
         } else if(memberId == null) {
-            posts = postRepository.findAllByPostCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(postCategory, pageable);
+            posts = postRepository.findAllByPostCategoryAndDeletedAtIsNull(postCategory, pageable);
         } else {
-            posts = postRepository.findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId, pageable);
+            posts = postRepository.findAllByMemberIdAndDeletedAtIsNull(memberId, pageable);
         }
 
         return posts.map(this::toDto);

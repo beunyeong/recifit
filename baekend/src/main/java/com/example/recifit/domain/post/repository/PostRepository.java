@@ -12,15 +12,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /**
      * 전체(최신순)
      */
-    Page<Post> findAllByDeletedAtIsNullOrderByCreatedAtDesc(Pageable pageable);
+    Page<Post> findAllByDeletedAtIsNull(Pageable pageable);
 
     /**
      * 카테고리별(최신순)
      */
-    Page<Post> findAllByPostCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(PostCategory postCategory, Pageable pageable);
+    Page<Post> findAllByPostCategoryAndDeletedAtIsNull(PostCategory postCategory, Pageable pageable);
 
     /**
      * 로그인된 사용자가 작성한 게시글 조회(최신순)
      */
-    Page<Post> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long memberId, Pageable pageable);
+    Page<Post> findAllByMemberIdAndDeletedAtIsNull(Long memberId, Pageable pageable);
 }
