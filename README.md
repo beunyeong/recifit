@@ -67,19 +67,18 @@
 ---------
 
 **4. AI 레시피 추천**  
-- 회원 타입과 요리 숙련도에 맞춘 맞춤형 레시피를 제공합니다.  
+- 생활 유형과 요리 실력에 맞춘 맞춤형 레시피를 제공합니다.  
 - 유통기한이 임박한 재료를 우선적으로 활용하여 식재료 낭비를 줄입니다.
 
-<img width="4042" height="2589" alt="AI 레시피 추천 화면" src="https://github.com/user-attachments/assets/dfb044f6-a03c-41f0-bf40-7fdc979b2e98" />
+<img width="948" height="452" alt="레시피 추천_250823" src="https://github.com/user-attachments/assets/4daf9411-c36d-41c6-893f-65fabb60e71e" />
 
 ---------
 
 **5. 커뮤니티**
 - 레시피/팁 카테고리로 글을 작성하고, 최신순으로 목록을 확인할 수 있습니다.
 - 작성/수정/삭제는 로그인 사용자만 가능합니다.
-<img width="3946" height="1934" alt="커뮤니티_게시글_250822" src="https://github.com/user-attachments/assets/b56378e3-0583-47c1-9f04-ce5dde20597c" />
 
-![커뮤니티](https://github.com/user-attachments/assets/1dbcd38d-f586-41bb-9bea-a821116762a9)
+![커뮤니티_250823](https://github.com/user-attachments/assets/a69c55d2-bb6c-4df7-8c92-ecde80ddea84)
 
 
 
