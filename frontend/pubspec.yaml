@@ -12,9 +12,14 @@ dependencies:
     sdk: flutter
   dio: ^5.3.3
   cupertino_icons: ^1.0.8
-  http: ^1.4.0
-  shared_preferences: ^2.3.2   # ← 추가
+  http: ^1.2.2
+  shared_preferences: ^2.2.3
   jwt_decoder: ^2.0.1
+
+  # Kakao SDK (버전 맞춰 사용)
+  kakao_flutter_sdk_common: ^1.9.7+3
+  kakao_flutter_sdk_auth: ^1.9.7+3
+  kakao_flutter_sdk_user: ^1.9.7+3
 
 dev_dependencies:
   flutter_test:
@@ -24,4 +29,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/Recifitimage_logo.png
+    - assets/images/kakao_login_medium_wide.png

@@ -1,52 +1,28 @@
 import 'dart:async' show unawaited;
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kakao_flutter_sdk_auth/kakao_flutter_sdk_auth.dart';
 
 enum MemberType { SINGLE, COUPLE, FAMILY, HOBBYIST, PET_OWNER }
 enum CookingLevel { BEGINNER, INTERMEDIATE, ADVANCED }
 enum PostCategory { RECIPE, TIP }
 
-extension _PostMap on Map {
-  String s(String key, [String def = '']) => (this[key] ?? def).toString();
-  int i(String key, [int def = 0]) => int.tryParse('${this[key] ?? def}') ?? def;
-}
-
 class ApiService {
-
-  // JWT 전체 클레임 (있으면)
-  Map<String, dynamic>? get currentClaims {
-    if (_accessToken == null) return null;
-    try {
-      return JwtDecoder.decode(_accessToken!);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  // 닉네임/이메일 등 보조 비교용
-  String? get currentNickname {
-    final c = currentClaims;
-    final n = c?['nickname'] ?? c?['name'] ?? c?['username'];
-    return n is String ? n : null;
-  }
-
-  String? get currentEmail {
-    final c = currentClaims;
-    final e = c?['email'];
-    return e is String ? e : null;
-  }
-
   ApiService._();
   static final instance = ApiService._();
 
-  // 웹/ios는 localhost, 안드로이드는 10.0.2.2
-  // flutter run -d android --dart-define=API_BASE_URL=http://10.0.2.2:8080
-  static const String _defaultBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8080',
-  );
+  // 백엔드 주소
+  static const String _defaultBaseUrl =
+  String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8080');
+
+  // 카카오 REST API 키(인가 코드 발급용)
+  static const String _kakaoRestApiKey =
+  String.fromEnvironment('KAKAO_REST_API_KEY', defaultValue: '');
+
+  // 웹 Redirect URI (콘솔 등록값과 정확히 일치)
+  static const String _webRedirectUri =
+  String.fromEnvironment('KAKAO_WEB_REDIRECT_URI', defaultValue: 'http://localhost:3000/oauth');
 
   final Dio _dio = Dio(
     BaseOptions(
@@ -54,7 +30,7 @@ class ApiService {
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 15),
       headers: {'Content-Type': 'application/json'},
-      validateStatus: (status) => status != null && status < 500,
+      validateStatus: (s) => s != null && s < 500,
     ),
   );
 
@@ -62,33 +38,26 @@ class ApiService {
   String? get accessToken => _accessToken;
   bool get isLoggedIn => _accessToken?.isNotEmpty == true;
 
+  // (선택) JWT 디코드 사용 시
+  Map<String, dynamic>? get currentClaims {
+    final t = _accessToken;
+    if (t == null) return null;
+    try { return JwtDecoder.decode(t); } catch (_) { return null; }
+  }
+  String? get currentEmail => currentClaims?['email'] as String?;
+  String? get currentNickname =>
+      (currentClaims?['nickname'] ?? currentClaims?['name'] ?? currentClaims?['username']) as String?;
   int? get currentMemberId {
-    if (_accessToken == null) return null;
-    try {
-      final decoded = JwtDecoder.decode(_accessToken!);
-      final id = decoded['memberId'] ?? decoded['id'] ?? decoded['sub'];
-      if (id is int) return id;
-      if (id is String) return int.tryParse(id);
-      return null;
-    } catch (_) {
-      return null;
-    }
+    final raw = currentClaims?['memberId'] ?? currentClaims?['id'] ?? currentClaims?['sub'];
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw);
+    return null;
   }
 
-  // 앱 시작 시 토큰 복원
   Future<void> init() async {
     final sp = await SharedPreferences.getInstance();
     final t = sp.getString('accessToken');
     if (t != null && t.isNotEmpty) setAccessToken(t);
-  }
-
-  Future<void> _persistToken(String? token) async {
-    final sp = await SharedPreferences.getInstance();
-    if (token == null || token.isEmpty) {
-      await sp.remove('accessToken');
-    } else {
-      await sp.setString('accessToken', token);
-    }
   }
 
   void setAccessToken(String token) {
@@ -103,30 +72,60 @@ class ApiService {
     unawaited(_persistToken(null));
   }
 
-  // ----------------- 인증 -----------------
-  Future<String> login(String email, String password) async {
-    try {
-      final res = await _dio.post('/api/auth/login', data: {
-        'email': email,
-        'password': password,
-      });
-      if ((res.statusCode ?? 500) >= 300) {
-        throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
-      }
-      final data = res.data;
-      final token = (data is Map)
-          ? (data['data']?['accessToken'] ?? data['accessToken'])
-          : null;
-      if (token is String && token.isNotEmpty) {
-        setAccessToken(token);
-        return token;
-      }
-      throw Exception('로그인 응답에 accessToken이 없습니다: $data');
-    } on DioException catch (e) {
-      throw Exception('HTTP ${e.response?.statusCode} ${e.requestOptions.uri}\n${e.response?.data}');
+  Future<void> _persistToken(String? token) async {
+    final sp = await SharedPreferences.getInstance();
+    if (token == null || token.isEmpty) {
+      await sp.remove('accessToken');
+    } else {
+      await sp.setString('accessToken', token);
     }
   }
 
+  // ---------------- 이메일/비번 로그인 ----------------
+  Future<String> login(String email, String password) async {
+    final res = await _dio.post('/api/auth/login', data: {
+      'email': email, 'password': password,
+    });
+    if ((res.statusCode ?? 500) >= 300) {
+      throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
+    }
+    final body = res.data;
+    final data = (body is Map) ? body['data'] : null;
+    final access = (data is Map) ? data['accessToken'] : null;
+    if (access is String && access.isNotEmpty) {
+      setAccessToken(access);
+      return access;
+    }
+    throw Exception('로그인 응답에 accessToken이 없습니다: $body');
+  }
+
+  // ① 카카오 인가 코드 받으러 이동(웹)
+  Future<void> startKakaoLoginWeb() async {
+    await AuthCodeClient.instance.authorize(
+      clientId: _kakaoRestApiKey,                    // REST API 키
+      redirectUri: _webRedirectUri,                  // http://localhost:3000/oauth
+      scopes: const ['profile_nickname','profile_image','account_email'],
+    );
+  }
+
+  // ② /oauth에서 받은 code를 서버에 교환
+  Future<String> exchangeKakaoCode(String code) async {
+    final res = await _dio.post('/api/auth/login/kakao', queryParameters: {'code': code});
+    if ((res.statusCode ?? 500) >= 300) {
+      throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
+    }
+    final body = res.data; // CommonResponseDto<LoginResponseDto>
+    final data = (body is Map) ? body['data'] : null;
+    final access = (data is Map) ? data['accessToken'] : null;
+
+    if (access is String && access.isNotEmpty) {
+      setAccessToken(access);
+      return access;
+    }
+    throw Exception('카카오 로그인 응답에 accessToken이 없습니다: $body');
+  }
+
+  // ---------------- 회원가입 ----------------
   Future<bool> signup({
     required String email,
     required String password,
@@ -145,7 +144,9 @@ class ApiService {
     }
   }
 
-  // ----------------- 커뮤니티 게시글 -----------------
+// ---------------- 커뮤니티/재료 등 나머지 API ----------------
+
+// 1) 리스트형(비페이지)
   Future<List<Map<String, dynamic>>> fetchPosts({
     PostCategory? category,
     bool mine = false,
@@ -154,7 +155,7 @@ class ApiService {
     String sort = 'createdAt,desc',
   }) async {
     final query = <String, dynamic>{
-      if (category != null) 'postCategory': category.name, // RECIPE/TIP
+      if (category != null) 'postCategory': category.name,
       if (mine) 'mine': true,
       'page': page,
       'size': size,
@@ -162,23 +163,25 @@ class ApiService {
     };
 
     final resp = await _dio.get('/posts', queryParameters: query);
-
-    // 구조: { code, message, data: { content: [...], ... } }
     final raw = resp.data;
     final unwrapped = (raw is Map) ? (raw['data'] ?? raw) : raw;
 
     if (unwrapped is List) {
-      return unwrapped.cast<Map<String, dynamic>>();
+      return unwrapped
+          .cast<Map>()
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     }
-
     if (unwrapped is Map && unwrapped['content'] is List) {
-      return (unwrapped['content'] as List).cast<Map<String, dynamic>>();
+      return (unwrapped['content'] as List)
+          .cast<Map>()
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     }
-
     return const <Map<String, dynamic>>[];
   }
 
-  // 페이지 메타 필요 시
+// 2) 페이지형 - CommunityScreen에서 사용하는 메서드
   Future<({
   List<Map<String, dynamic>> content,
   int totalElements,
@@ -202,24 +205,34 @@ class ApiService {
     };
 
     final resp = await _dio.get('/posts', queryParameters: query);
-
     final raw = resp.data;
     final unwrapped = (raw is Map) ? (raw['data'] ?? raw) : raw;
 
+    // 1) 응답이 List인 경우(비페이지 응답)
     if (unwrapped is List) {
+      final list = unwrapped
+          .cast<Map>()
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
       return (
-      content: unwrapped.cast<Map<String, dynamic>>(),
-      totalElements: unwrapped.length,
+      content: list,
+      totalElements: list.length,
       totalPages: 1,
       number: 0,
-      size: unwrapped.length,
+      size: list.length,
       last: true,
       );
     }
 
+    // 2) Spring Page 형태인 경우
     if (unwrapped is Map && unwrapped['content'] is List) {
+      final contentList = (unwrapped['content'] as List)
+          .cast<Map>()
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+
       return (
-      content: (unwrapped['content'] as List).cast<Map<String, dynamic>>(),
+      content: contentList,
       totalElements: (unwrapped['totalElements'] ?? 0) as int,
       totalPages: (unwrapped['totalPages'] ?? 1) as int,
       number: (unwrapped['number'] ?? page) as int,
@@ -228,6 +241,7 @@ class ApiService {
       );
     }
 
+    // 3) 예외 케이스
     return (
     content: const <Map<String, dynamic>>[],
     totalElements: 0,
@@ -238,7 +252,6 @@ class ApiService {
     );
   }
 
-  // 게시글 등록
   Future<Map<String, dynamic>> addPost({
     required PostCategory category,
     required String title,
@@ -251,39 +264,10 @@ class ApiService {
         'title': title,
         'content': content,
       });
-
       final status = res.statusCode ?? 500;
       if (status >= 300) {
         throw Exception('HTTP $status ${res.requestOptions.uri}\n${res.data}');
       }
-
-      final body = res.data; // CommonResponseDto 가정
-      final data = (body is Map) ? (body['data'] ?? body) : body;
-      if (data is Map<String, dynamic>) return data;
-      return {'raw': data};
-    } on DioException catch (e) {
-      throw Exception('HTTP ${e.response?.statusCode} ${e.requestOptions.uri}\n${e.response?.data}');
-    }
-  }
-
-  // 게시글 수정
-  Future<Map<String, dynamic>> updatePost({
-    required int postId,
-    required String title,
-    required String content,
-  }) async {
-    if (!isLoggedIn) throw Exception('로그인이 필요합니다');
-    try {
-      final res = await _dio.patch('/posts/$postId', data: {
-        'title': title,
-        'content': content,
-      });
-
-      final status = res.statusCode ?? 500;
-      if (status >= 300) {
-        throw Exception('HTTP $status ${res.requestOptions.uri}\n${res.data}');
-      }
-
       final body = res.data;
       final data = (body is Map) ? (body['data'] ?? body) : body;
       if (data is Map<String, dynamic>) return data;
@@ -293,23 +277,79 @@ class ApiService {
     }
   }
 
-  // 게시글 삭제
+  Future<Map<String, dynamic>> updatePost({
+    required int postId,
+    required String title,
+    required String content,
+  }) async {
+    if (!isLoggedIn) throw Exception('로그인이 필요합니다');
+    try {
+      final res = await _dio.patch('/posts/$postId', data: {
+        'title': title, 'content': content,
+      });
+      final status = res.statusCode ?? 500;
+      if (status >= 300) {
+        throw Exception('HTTP $status ${res.requestOptions.uri}\n${res.data}');
+      }
+      final body = res.data;
+      final data = (body is Map) ? (body['data'] ?? body) : body;
+      if (data is Map<String, dynamic>) return data;
+      return {'raw': data};
+    } on DioException catch (e) {
+      throw Exception('HTTP ${e.response?.statusCode} ${e.requestOptions.uri}\n${e.response?.data}');
+    }
+  }
+
   Future<void> deletePost(int postId) async {
     if (!isLoggedIn) throw Exception('로그인이 필요합니다');
     try {
       final res = await _dio.delete('/posts/$postId');
       final status = res.statusCode ?? 500;
+      if (status == 204) return;
       if (status >= 300) {
         throw Exception('HTTP $status ${res.requestOptions.uri}\n${res.data}');
       }
     } on DioException catch (e) {
-      throw Exception(
-        'HTTP ${e.response?.statusCode} ${e.requestOptions.uri}\n${e.response?.data}',
-      );
+      throw Exception('HTTP ${e.response?.statusCode} ${e.requestOptions.uri}\n${e.response?.data}');
     }
   }
 
-  // ----------------- 공공데이터 재료 검색 -----------------
+  Future<List<Map<String, dynamic>>> fetchComments({
+    required int postId,
+    bool mine = false,
+  }) async {
+    final res = await _dio.get('/posts/$postId/comments', queryParameters: { if (mine) 'mine': true });
+    if ((res.statusCode ?? 500) >= 300) {
+      throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
+    }
+    final raw = res.data;
+    final data = (raw is Map) ? (raw['data'] ?? raw) : raw;
+    if (data is List) {
+      return data.cast<Map>().map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return const <Map<String, dynamic>>[];
+  }
+
+  Future<Map<String, dynamic>> addComment({
+    required int postId,
+    required String content,
+  }) async {
+    if (!isLoggedIn) throw Exception('로그인이 필요합니다');
+    try {
+      final res = await _dio.post('/posts/$postId/comments', data: {'content': content});
+      final status = res.statusCode ?? 500;
+      if (status >= 300) {
+        throw Exception('HTTP $status ${res.requestOptions.uri}\n${res.data}');
+      }
+      final raw = res.data;
+      final data = (raw is Map) ? (raw['data'] ?? raw) : raw;
+      if (data is Map<String, dynamic>) return data;
+      return {'raw': data};
+    } on DioException catch (e) {
+      throw Exception('HTTP ${e.response?.statusCode} ${e.requestOptions.uri}\n${e.response?.data}');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> searchIngredients(String query) async {
     final res = await _dio.get('/api/ingredients/search', queryParameters: {'query': query});
     if ((res.statusCode ?? 500) >= 300) {
@@ -317,7 +357,6 @@ class ApiService {
     }
     final data = res.data;
     if (data is! List) return <Map<String, dynamic>>[];
-
     return data.map<Map<String, dynamic>>((raw) {
       final m = Map<String, dynamic>.from(raw as Map);
       final name = m['foodNmKr'] ?? m['foodName'] ?? m['식품명'] ?? m['name'] ?? '-';
@@ -327,7 +366,6 @@ class ApiService {
     }).toList();
   }
 
-  // 게시글 단건 조회
   Future<Map<String, dynamic>> fetchPost(int postId) async {
     final res = await _dio.get('/posts/$postId');
     if ((res.statusCode ?? 500) >= 300) {
@@ -335,14 +373,10 @@ class ApiService {
     }
     final raw = res.data;
     final data = (raw is Map) ? (raw['data'] ?? raw) : raw;
-
-    // 서버가 PostResponseDto 한 건을 내려줌
     if (data is Map<String, dynamic>) return data;
-
     throw Exception('Unexpected response for GET /posts/$postId: $data');
   }
 
-  // ----------------- 내 재료 (인증 필요) -----------------
   Future<void> addIngredient({
     required String ingredientName,
     required String description,
@@ -370,9 +404,8 @@ class ApiService {
   Future<void> deleteIngredient(int id) async {
     if (!isLoggedIn) throw Exception('로그인이 필요합니다');
     final res = await _dio.delete('/api/ingredients/$id');
-
     final status = res.statusCode ?? 500;
-    if (status == 204) return; // No Content도 정상
+    if (status == 204) return;
     if (status >= 300) {
       throw Exception('HTTP $status ${res.requestOptions.uri}\n${res.data}');
     }
@@ -386,7 +419,6 @@ class ApiService {
     }
     final data = res.data;
     if (data is! List) return <Map<String, dynamic>>[];
-
     return data.map<Map<String, dynamic>>((raw) {
       final m = Map<String, dynamic>.from(raw as Map);
       final normalized = {
@@ -399,7 +431,6 @@ class ApiService {
     }).toList();
   }
 
-  // ----------------- AI 레시피 추천 (인증 필요) -----------------
   Future<String> recommendRecipes({
     MemberType memberType = MemberType.SINGLE,
     CookingLevel cookingLevel = CookingLevel.BEGINNER,
@@ -417,8 +448,6 @@ class ApiService {
       if (recipeId != null) 'recipeId': recipeId,
     };
 
-    debugPrint('Auth header = ${_dio.options.headers['Authorization']}');
-
     final res = await _dio.post('/api/recipes/recommendations', data: payload);
     if ((res.statusCode ?? 500) >= 300) {
       throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
@@ -429,7 +458,6 @@ class ApiService {
     return content is String ? content : content.toString();
   }
 
-  // ----------------- 기타 -----------------
   Future<List<Map<String, dynamic>>> fetchIngredients({String? query}) async {
     final q = (query ?? '').trim();
     return searchIngredients(q);

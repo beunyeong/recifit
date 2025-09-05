@@ -46,7 +46,8 @@
 **1. 메인화면 & 회원가입 & 로그인**  
 계정을 생성하고 로그인하여 나만의 냉장고와 레시피 서비스를 시작합니다.
 
-<img width="3955" height="1934" alt="메인화면, 회원가입, 로그인_250822" src="https://github.com/user-attachments/assets/aba99b69-190f-430d-9f00-c6945af86c75" />
+<img width="4097" height="1934" alt="메인화면, 회원가입, 로그인_250905" src="https://github.com/user-attachments/assets/a9ebb8a7-2c00-4ab2-afeb-f7340ffc015a" />
+
 
 ---------
 

@@ -39,10 +39,7 @@ public enum ErrorCode {
     /**
      * 500 INTERNAL_SERVER_ERROR
      */
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
-    OAUTH_TOKEN_ISSUE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "카카오 토큰 발급에 실패했습니다."),
-    OAUTH_PROFILE_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "카카오 사용자 정보 조회에 실패했습니다.");
-
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
 
 
     private final HttpStatus httpStatus;

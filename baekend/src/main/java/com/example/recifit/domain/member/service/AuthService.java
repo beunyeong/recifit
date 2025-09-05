@@ -1,17 +1,16 @@
 package com.example.recifit.domain.member.service;
 
-import com.example.recifit.domain.member.dto.KakaoDTO;
 import com.example.recifit.domain.member.dto.LoginRequestDto;
 import com.example.recifit.domain.member.dto.LoginResponseDto;
 import com.example.recifit.domain.member.dto.SignupRequestDto;
 import com.example.recifit.domain.member.entity.Member;
-import com.example.recifit.domain.member.enums.AuthProvider;
-import com.example.recifit.domain.member.enums.MemberType;
+import com.example.recifit.domain.member.enums.MemberRole;
 import com.example.recifit.domain.member.repository.MemberRepository;
+import com.example.recifit.global.common.CommonResponseDto;
+import com.example.recifit.global.common.SuccessCode;
 import com.example.recifit.global.error.errorcode.ErrorCode;
 import com.example.recifit.global.error.exception.CustomException;
 import com.example.recifit.global.jwt.JwtProvider;
-import com.example.recifit.global.util.KakaoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,60 +23,17 @@ public class AuthService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
-    private final KakaoUtil kakaoUtil;
 
     public AuthService(MemberRepository memberRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtProvider jwtProvider,
-                       KakaoUtil kakaoUtil) {
+                       JwtProvider jwtProvider) {
         this.memberRepository = memberRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
-        this.kakaoUtil = kakaoUtil;
     }
 
     @Transactional
-    public LoginResponseDto oAuthLogin(String code) {
-        KakaoDTO.OAuthToken token = kakaoUtil.requestToken(code).block();
-        if(token == null || token.getAccessToken() == null) {
-            throw new CustomException(ErrorCode.OAUTH_TOKEN_ISSUE_FAILED);
-        }
-
-        KakaoDTO.KakaoProfile profile = kakaoUtil.getMemberInfo(token.getAccessToken()).block();
-        if(profile == null || profile.getId() == null) {
-            throw new CustomException(ErrorCode.OAUTH_PROFILE_FETCH_FAILED);
-        }
-
-        Long kakaoId = profile.getId();
-        String email = (profile.getKakaoAccount() != null)
-                ? profile.getKakaoAccount().getEmail()
-                : null;
-        String nickname = (profile.getKakaoAccount() != null && profile.getKakaoAccount().getProfile() != null)
-                ? profile.getKakaoAccount().getProfile().getNickname()
-                : "닉네임을 설정해주세요";
-
-        Member member = memberRepository.findByKakaoId(kakaoId)
-                .orElseGet(() -> memberRepository.save(
-                        Member.builder()
-                                .kakaoId(kakaoId)
-                                .email(email)
-                                .nickname(nickname)
-                                .memberType(MemberType.SINGLE)
-                                .password(null)
-                                .provider(AuthProvider.KAKAO)
-                                .build()
-                ));
-        String subject = (member.getEmail() != null)
-                ? member.getEmail()
-                : String.valueOf(member.getId());
-        String accessToken = jwtProvider.generateAccessToken(subject);
-        String refreshToken = jwtProvider.generateRefreshToken(subject);
-
-        return new LoginResponseDto(accessToken, refreshToken);
-    }
-
-    @Transactional
-    public void signup(SignupRequestDto signupRequestDto) {
+    public CommonResponseDto<String> signup(SignupRequestDto signupRequestDto) {
         // 중복 이메일 확인
         if (memberRepository.findByEmail(signupRequestDto.getEmail()).isPresent()) {
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
@@ -96,13 +52,16 @@ public class AuthService {
                 .email(signupRequestDto.getEmail())
                 .password(encodedPassword)
                 .nickname(signupRequestDto.getNickname())
-                .provider(AuthProvider.LOCAL)
+                .memberRole(MemberRole.USER)
                 .build();
 
         memberRepository.save(member);
 
         log.info("저장된 회원: {}", member.getEmail());
         log.info("저장된 닉네임: {}", member.getNickname());
+
+        // 결과 반환
+        return CommonResponseDto.success(SuccessCode.SIGNUP_SUCCESS, null);
     }
 
     public LoginResponseDto login(LoginRequestDto loginRequestDto) {
@@ -123,3 +82,6 @@ public class AuthService {
         return new LoginResponseDto(accessToken, refreshToken);
     }
 }
+
+
+
