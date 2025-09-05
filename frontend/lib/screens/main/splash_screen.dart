@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:recifit_app/services/api_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -17,6 +18,8 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<Offset> _slideIn;
 
   bool _isPressed = false;
+  bool _busy = false;         // ← 콜백 처리 중 로딩
+  String? _error;             // ← 에러 메시지 표시용
 
   Color get _bg => const Color(0xFFF7F5F3);
   Color get _card => const Color(0xFFFFFFFE);
@@ -32,6 +35,53 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _setupAnimations();
     _controller.forward();
+    _boot();
+  }
+
+  Future<void> _boot() async {
+    try {
+      await ApiService.instance.init();
+
+      if (kIsWeb) {
+        final uri = Uri.base; // 현재 주소 (예: /oauth?code=...)
+        if (uri.path == '/oauth') {
+          final error = uri.queryParameters['error'];
+          final code = uri.queryParameters['code'];
+
+          if (error != null && error.isNotEmpty) {
+            setState(() => _error = '카카오 로그인 실패: $error');
+            await Future.delayed(const Duration(milliseconds: 600));
+            if (!mounted) return;
+            Navigator.pushReplacementNamed(context, '/login');
+            return;
+          }
+
+          if (code != null && code.isNotEmpty) {
+            setState(() => _busy = true);
+            try {
+              await ApiService.instance.exchangeKakaoCode(code);
+              if (!mounted) return;
+              Navigator.pushReplacementNamed(context, '/main');
+              return;
+            } catch (e) {
+              setState(() => _error = '토큰 교환 실패: $e');
+              await Future.delayed(const Duration(milliseconds: 600));
+              if (!mounted) return;
+              Navigator.pushReplacementNamed(context, '/login');
+              return;
+            } finally {
+              if (mounted) setState(() => _busy = false);
+            }
+          }
+
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, '/login');
+          return;
+        }
+      }
+    } catch (e) {
+      setState(() => _error = '초기화 오류: $e');
+    }
   }
 
   void _setupAnimations() {
@@ -72,12 +122,13 @@ class _SplashScreenState extends State<SplashScreen>
   void _navigateNext() {
     final hasToken = ApiService.instance.accessToken != null;
     Navigator.pushReplacementNamed(context, hasToken ? '/main' : '/signup');
+    // 로그인 먼저 보여주려면 '/signup' 대신 '/login' 사용 가능
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _navigateNext,
+      onTap: _busy ? null : _navigateNext, // 콜백 처리 중엔 탭 비활성화
       child: Scaffold(
         backgroundColor: _bg,
         body: Stack(
@@ -117,6 +168,17 @@ class _SplashScreenState extends State<SplashScreen>
                               _ctaButton(),
                               const SizedBox(height: 14),
                               _hint(),
+                              if (_error != null) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  _error!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.red.shade600,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 24),
                             ],
                           ),
@@ -127,6 +189,21 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
             ),
+
+            // 3) OAuth 처리 중 로딩 오버레이
+            if (_busy)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.05),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -136,15 +213,6 @@ class _SplashScreenState extends State<SplashScreen>
   Widget _brand() {
     return Column(
       children: [
-        // Text(
-        //   'Recifit',
-        //   style: TextStyle(
-        //     color: _text,
-        //     fontSize: 34,
-        //     fontWeight: FontWeight.w800,
-        //     letterSpacing: -0.5,
-        //   ),
-        // ),
         const SizedBox(height: 8),
         Text(
           '스마트한 요리 생활의 시작',
@@ -215,7 +283,7 @@ class _SplashScreenState extends State<SplashScreen>
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
-      onTap: _navigateNext,
+      onTap: _busy ? null : _navigateNext,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         transform: Matrix4.identity()..scale(_isPressed ? 0.96 : 1.0),
