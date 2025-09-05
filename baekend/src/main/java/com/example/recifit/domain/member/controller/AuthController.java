@@ -6,13 +6,11 @@ import com.example.recifit.domain.member.dto.SignupRequestDto;
 import com.example.recifit.domain.member.service.AuthService;
 import com.example.recifit.global.common.CommonResponseDto;
 import com.example.recifit.global.common.SuccessCode;
-import com.example.recifit.global.jwt.JwtProvider;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,16 +18,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtProvider jwtProvider;
 
-    public AuthController(AuthService authService, JwtProvider jwtProvider) {
+    public AuthController(AuthService authService) {
         this.authService = authService;
-        this.jwtProvider = jwtProvider;
+    }
+
+    @PostMapping("/login/kakao")
+    public ResponseEntity<CommonResponseDto<LoginResponseDto>> kakaoLogin(@RequestParam("code") String code) {
+        LoginResponseDto loginResponseDto = authService.oAuthLogin(code);
+
+        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.LOGIN_SUCCESS, loginResponseDto));
     }
 
     // 회원가입
     @PostMapping("/signup")
-    public ResponseEntity<CommonResponseDto<Void>> signup(@RequestBody SignupRequestDto signupRequestDto) {
+    public ResponseEntity<CommonResponseDto<Void>> signup(@Valid @RequestBody SignupRequestDto signupRequestDto) {
         authService.signup(signupRequestDto);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.SIGNUP_SUCCESS, null));
@@ -41,8 +44,6 @@ public class AuthController {
         LoginResponseDto response = authService.login(loginRequestDto);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.LOGIN_SUCCESS, response));
-
-
     }
 
     // 로그아웃
