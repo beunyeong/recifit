@@ -26,6 +26,10 @@ public enum SuccessCode {
     GET_POST_SUCCESS("게시글 조회 완료"),
     DELETE_POST_SUCCESS("게시글이 삭제되었습니다."),
 
+    /**
+     * 댓글(Comment) 관련 Code
+     */
+    ADD_COMMENT_SUCCESS("댓글이 작성되었습니다."),
 
     /**
      * AI 레시피 추천 관련 Code

@@ -1,0 +1,63 @@
+package com.example.recifit.domain.comment.service;
+
+import com.example.recifit.domain.comment.dto.CommentRequestDto;
+import com.example.recifit.domain.comment.dto.CommentResponseDto;
+import com.example.recifit.domain.comment.entity.Comment;
+import com.example.recifit.domain.comment.repository.CommentRepository;
+import com.example.recifit.domain.member.entity.Member;
+import com.example.recifit.domain.member.repository.MemberRepository;
+import com.example.recifit.domain.post.entity.Post;
+import com.example.recifit.domain.post.repository.PostRepository;
+import com.example.recifit.global.error.errorcode.ErrorCode;
+import com.example.recifit.global.error.exception.CustomException;
+import org.springframework.stereotype.Service;
+
+
+@Service
+public class CommentService {
+
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
+    private final MemberRepository memberRepository;
+
+    public CommentService(PostRepository postRepository,
+                          CommentRepository commentRepository,
+                          MemberRepository memberRepository) {
+        this.postRepository = postRepository;
+        this.commentRepository = commentRepository;
+        this.memberRepository = memberRepository;
+    }
+
+    public CommentResponseDto addComment(CommentRequestDto commentRequestDto, Long memberId, Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        Comment comment = commentRepository.save(Comment.builder()
+                .nickname(member.getNickname())
+                .content(commentRequestDto.getContent())
+                .post(post)
+                .member(member)
+                .build()
+        );
+
+        return toDto(comment, memberId);
+    }
+
+    private CommentResponseDto toDto(Comment comment, Long currentMemberId) {
+        boolean mine = currentMemberId != null && currentMemberId.equals(comment.getMember().getId());
+        return new CommentResponseDto(
+                comment.getId(),
+                comment.getPost().getId(),
+                comment.getNickname(),
+                comment.getContent(),
+                comment.getCreatedAt(),
+                mine
+        );
+
+    }
+
+    // TODO: 게시글 삭제시 댓글도 같이 삭제 필요
+}
