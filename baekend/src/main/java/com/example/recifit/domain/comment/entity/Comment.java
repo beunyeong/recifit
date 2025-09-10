@@ -7,12 +7,14 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Where;
 
 
 @Entity
 @Getter
 @Table(name = "comments")
 @NoArgsConstructor
+@Where(clause = "deleted_at Is NULL")
 public class Comment extends BaseEntity {
 
     @Id
