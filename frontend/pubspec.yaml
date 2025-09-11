@@ -29,5 +29,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/Recifitimage_logo.png
     - assets/images/kakao_login_medium_wide.png
