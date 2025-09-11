@@ -29,7 +29,9 @@ public enum SuccessCode {
     /**
      * 댓글(Comment) 관련 Code
      */
-    ADD_COMMENT_SUCCESS("댓글이 작성되었습니다."),
+    ADD_COMMENT_SUCCESS("댓글이 작성 되었습니다."),
+    GET_COMMENT_SUCCESS("댓글이 조회 되었습니다."),
+
 
     /**
      * AI 레시피 추천 관련 Code

@@ -12,6 +12,9 @@ import com.example.recifit.global.error.errorcode.ErrorCode;
 import com.example.recifit.global.error.exception.CustomException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 @Service
 public class CommentService {
@@ -26,6 +29,19 @@ public class CommentService {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.memberRepository = memberRepository;
+    }
+
+    private CommentResponseDto toDto(Comment comment, Long currentMemberId) {
+        boolean mine = currentMemberId != null && currentMemberId.equals(comment.getMember().getId());
+        return new CommentResponseDto(
+                comment.getId(),
+                comment.getPost().getId(),
+                comment.getNickname(),
+                comment.getContent(),
+                comment.getCreatedAt(),
+                mine
+        );
+
     }
 
     public CommentResponseDto addComment(CommentRequestDto commentRequestDto, Long memberId, Long postId) {
@@ -46,18 +62,14 @@ public class CommentService {
         return toDto(comment, memberId);
     }
 
-    private CommentResponseDto toDto(Comment comment, Long currentMemberId) {
-        boolean mine = currentMemberId != null && currentMemberId.equals(comment.getMember().getId());
-        return new CommentResponseDto(
-                comment.getId(),
-                comment.getPost().getId(),
-                comment.getNickname(),
-                comment.getContent(),
-                comment.getCreatedAt(),
-                mine
-        );
+    public List<CommentResponseDto> getAllComments(Long postId, Long currentMemberId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
+        List<Comment> comments = commentRepository.findByPost(post);
+
+        return comments.stream()
+                .map(comment -> toDto(comment, currentMemberId))
+                .collect(Collectors.toList());
     }
-
-    // TODO: 게시글 삭제시 댓글도 같이 삭제 필요
 }

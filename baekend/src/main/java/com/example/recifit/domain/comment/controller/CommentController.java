@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 @RestController
 @RequestMapping("/posts/{postId}/comments")
@@ -31,5 +33,14 @@ public class CommentController {
         CommentResponseDto commentResponseDto = commentService.addComment(commentRequestDto,memberId, postId);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.ADD_COMMENT_SUCCESS, commentResponseDto));
+    }
+
+    @GetMapping
+    public ResponseEntity<CommonResponseDto<List<CommentResponseDto>>> getComments(@PathVariable Long postId,
+                                                                                   @AuthenticationPrincipal MemberDetailsImpl memberDetails) {
+        Long currentMemberId = (memberDetails != null) ? memberDetails.getMember().getId() : null;
+        List<CommentResponseDto> comments = commentService.getAllComments(postId, currentMemberId);
+
+        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.GET_COMMENT_SUCCESS, comments));
     }
 }
