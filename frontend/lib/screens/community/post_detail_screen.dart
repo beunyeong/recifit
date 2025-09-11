@@ -18,6 +18,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocus = FocusNode();
 
+  int? _postId;
+
   Color get _bg => const Color(0xFFF7F5F3);
   Color get _card => const Color(0xFFFFFFFE);
   Color get _text => const Color(0xFF2C2C2C);
@@ -29,17 +31,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments;
-    final postId = (args is Map) ? int.tryParse('${args['postId']}') : null;
-    if (postId == null) {
-      setState(() {
-        _loading = false;
-        _error = '잘못된 요청입니다 (postId 없음)';
-      });
-      return;
+    if (_postId == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      _postId = (args is Map) ? int.tryParse('${args['postId']}') : null;
+
+      if (_postId == null) {
+        setState(() {
+          _loading = false;
+          _error = '잘못된 요청입니다 (postId 없음)';
+        });
+        return;
+      }
+      _fetch(_postId!);
+      _fetchComments(_postId!);
     }
-    _fetch(postId);
-    _fetchComments(postId);
   }
 
   @override
@@ -56,13 +61,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     });
     try {
       final data = await ApiService.instance.fetchPost(postId);
-      setState(() {
-        _post = data;
-      });
+      setState(() => _post = data);
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
+      setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -71,33 +72,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Future<void> _fetchComments(int postId) async {
     setState(() => _commentsLoading = true);
     try {
-      // TODO: 실제 댓글 API 연결
-      await Future.delayed(const Duration(milliseconds: 500));
-      setState(() {
-        _comments = [
-          {
-            'id': 1,
-            'content': '정말 유용한 정보네요! 감사합니다 😊',
-            'nickname': '건강지킴이',
-            'createdAt': '2024-03-15T10:30:00',
-            'isMine': false,
-          },
-          {
-            'id': 2,
-            'content': '저도 이 방법으로 해봤는데 정말 효과가 좋더라고요. 추천드려요!',
-            'nickname': '운동매니아',
-            'createdAt': '2024-03-15T11:15:00',
-            'isMine': false,
-          },
-          {
-            'id': 3,
-            'content': '혹시 초보자도 따라할 수 있을까요?',
-            'nickname': '운동초보',
-            'createdAt': '2024-03-15T14:20:00',
-            'isMine': true,
-          },
-        ];
-      });
+      final list = await ApiService.instance.fetchComments(postId: postId);
+      setState(() => _comments = list);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('댓글을 불러오지 못했어요: $e')),
+      );
     } finally {
       if (mounted) setState(() => _commentsLoading = false);
     }
@@ -159,13 +140,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         decoration: BoxDecoration(
           color: _card,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: Offset(0, 2))],
         ),
         child: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: _text, size: 20),
@@ -179,17 +154,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             decoration: BoxDecoration(
               color: _card,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: Offset(0, 2))],
             ),
             child: IconButton(
               icon: Icon(Icons.more_horiz, color: _sub),
-              onPressed: _showActionSheet, // 커스텀 액션시트 호출
+              onPressed: _showActionSheet,
             ),
           ),
       ],
@@ -198,20 +167,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const SizedBox(
-        height: 400,
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const SizedBox(height: 400, child: Center(child: CircularProgressIndicator()));
     }
     if (_error != null) {
       return Container(
         height: 400,
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _card,
-          borderRadius: BorderRadius.circular(16),
-        ),
+        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16)),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -227,10 +190,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       );
     }
     if (_post == null) {
-      return const SizedBox(
-        height: 400,
-        child: Center(child: Text('데이터가 없습니다.')),
-      );
+      return const SizedBox(height: 400, child: Center(child: Text('데이터가 없습니다.')));
     }
 
     return Column(
@@ -258,18 +218,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 카테고리와 시간
           Row(
             children: [
               Container(
@@ -282,9 +235,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: category == '레시피'
-                        ? Colors.blue.withOpacity(0.2)
-                        : Colors.orange.withOpacity(0.2),
+                    color: category == '레시피' ? Colors.blue.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
                   ),
                 ),
                 child: Text(
@@ -297,126 +248,50 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 ),
               ),
               const Spacer(),
-              Text(
-                _formatRelativeTime(createdAt),
-                style: TextStyle(color: _muted, fontSize: 13),
-              ),
+              Text(_formatRelativeTime(createdAt), style: TextStyle(color: _muted, fontSize: 13)),
             ],
           ),
-
           const SizedBox(height: 18),
-
-          // 제목
-          Text(
-            title,
-            style: TextStyle(
-              color: _text,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              height: 1.3,
-            ),
-          ),
-
+          Text(title, style: TextStyle(color: _text, fontSize: 22, fontWeight: FontWeight.w800, height: 1.3)),
           const SizedBox(height: 12),
-
-          // 작성자
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: _primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                width: 32, height: 32,
+                decoration: BoxDecoration(color: _primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
                 child: Center(
-                  child: Text(
-                    nickname.isNotEmpty ? nickname[0] : '?',
-                    style: TextStyle(
-                      color: _primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
+                  child: Text(nickname.isNotEmpty ? nickname[0] : '?',
+                      style: TextStyle(color: _primary, fontWeight: FontWeight.w700, fontSize: 14)),
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                nickname,
-                style: TextStyle(
-                  color: _text,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
+              Text(nickname, style: TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 15)),
               if (_isMine) ...[
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '내 글',
-                    style: TextStyle(
-                      color: _primary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: _primary.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                  child: Text('내 글', style: TextStyle(color: _primary, fontSize: 10, fontWeight: FontWeight.w600)),
                 ),
               ],
             ],
           ),
-
           const SizedBox(height: 20),
-
-          // 내용
-          Text(
-            content,
-            style: TextStyle(
-              color: _text,
-              height: 1.7,
-              fontSize: 16,
-            ),
-          ),
-
+          Text(content, style: TextStyle(color: _text, height: 1.7, fontSize: 16)),
           const SizedBox(height: 24),
-
-          // 구분선
-          Container(
-            height: 1,
-            color: _light,
-          ),
-
+          Container(height: 1, color: _light),
           const SizedBox(height: 16),
-
-          // 좋아요, 댓글 수
           Row(
             children: [
-              _buildInteractionButton(
-                icon: Icons.favorite_border_rounded,
-                count: likeCount,
-                onTap: () {
-                  // TODO: 좋아요 기능
-                },
-              ),
+              _buildInteractionButton(icon: Icons.favorite_border_rounded, count: likeCount, onTap: () {}),
               const SizedBox(width: 20),
               _buildInteractionButton(
                 icon: Icons.chat_bubble_outline_rounded,
                 count: commentCount,
-                onTap: () {
-                  _commentFocus.requestFocus();
-                },
+                onTap: () => _commentFocus.requestFocus(),
               ),
               const Spacer(),
-              IconButton(
-                icon: Icon(Icons.share_outlined, color: _muted, size: 20),
-                onPressed: () {
-                  // TODO: 공유 기능
-                },
-              ),
+              IconButton(icon: Icon(Icons.share_outlined, color: _muted, size: 20), onPressed: () {}),
             ],
           ),
         ],
@@ -438,14 +313,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           children: [
             Icon(icon, size: 20, color: _sub),
             const SizedBox(width: 6),
-            Text(
-              count.toString(),
-              style: TextStyle(
-                color: _sub,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
+            Text(count.toString(), style: TextStyle(color: _sub, fontWeight: FontWeight.w600, fontSize: 14)),
           ],
         ),
       ),
@@ -455,17 +323,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget _buildCommentsSection() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(20), boxShadow: [
+        BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: Offset(0, 4)),
+      ]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -473,55 +333,32 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: Row(
               children: [
-                Text(
-                  '댓글',
-                  style: TextStyle(
-                    color: _text,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text('댓글', style: TextStyle(color: _text, fontSize: 18, fontWeight: FontWeight.w700)),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '${_comments.length}',
-                    style: TextStyle(
-                      color: _primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: _primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                  child: Text('${_comments.length}', style: TextStyle(color: _primary, fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
           ),
           if (_commentsLoading)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
           else if (_comments.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(40),
-              child: Column(
-                children: [
-                  Icon(Icons.chat_bubble_outline, size: 48, color: _muted),
-                  const SizedBox(height: 12),
-                  Text(
-                    '아직 댓글이 없어요',
-                    style: TextStyle(color: _text, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '첫 댓글을 남겨보세요!',
-                    style: TextStyle(color: _muted, fontSize: 14),
-                  ),
-                ],
+            SizedBox(
+              height: 200,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey),
+                    SizedBox(height: 12),
+                    Text('아직 댓글이 없어요', style: TextStyle(fontWeight: FontWeight.w600)),
+                    SizedBox(height: 4),
+                    Text('첫 댓글을 남겨보세요!', style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
               ),
             )
           else
@@ -538,11 +375,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  // 댓글 아이템
   Widget _buildCommentItem(Map<String, dynamic> comment) {
-    final content = comment['content'] ?? '';
-    final nickname = comment['nickname'] ?? '익명';
-    final createdAt = comment['createdAt'] ?? '';
-    final isMine = comment['isMine'] == true;
+    final content = (comment['content'] ?? '').toString();
+    final nickname = (comment['nickname'] ?? '익명').toString();
+    final createdAt = (comment['createdAt'] ?? '').toString();
+    final isMine = (comment['isMine'] == true) || (comment['mine'] == true);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -557,8 +395,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           Row(
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: 28, height: 28,
                 decoration: BoxDecoration(
                   color: isMine ? _primary.withOpacity(0.2) : _sub.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
@@ -566,88 +403,283 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 child: Center(
                   child: Text(
                     nickname.isNotEmpty ? nickname[0] : '?',
-                    style: TextStyle(
-                      color: isMine ? _primary : _sub,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: isMine ? _primary : _sub, fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                nickname,
-                style: TextStyle(
-                  color: _text,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        nickname,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                    ),
+                    if (isMine) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(color: _primary.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                        child: Text('내 댓글', style: TextStyle(color: _primary, fontSize: 9, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ],
                 ),
               ),
+              const SizedBox(width: 8),
+              Text(_formatRelativeTime(createdAt), style: TextStyle(color: _muted, fontSize: 12)),
               if (isMine) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: _primary.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '내 댓글',
-                    style: TextStyle(
-                      color: _primary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                const SizedBox(width: 4),
+                _KebabButton(
+                  onTap: (tapContext) => _openCommentMenu(tapContext, comment),
                 ),
               ],
-              const Spacer(),
-              Text(
-                _formatRelativeTime(createdAt),
-                style: TextStyle(color: _muted, fontSize: 12),
-              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            content,
-            style: TextStyle(
-              color: _text,
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
+          Text(content, style: TextStyle(color: _text, fontSize: 14, height: 1.5)),
         ],
       ),
     );
   }
 
+  // kebab 버튼을 눌렀을 때 댓글 옵션 바텀시트
+  Future<void> _openCommentMenu(BuildContext tapContext, Map<String, dynamic> comment) async {
+    final isMine = (comment['isMine'] == true) || (comment['mine'] == true);
+    if (!isMine) return;
+
+    await showModalBottomSheet(
+      context: tapContext,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: Offset(0, -4))],
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(width: 46, height: 5, decoration: BoxDecoration(color: Colors.black.withOpacity(0.12), borderRadius: BorderRadius.circular(3))),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text('댓글 옵션', style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w700)),
+                    const Spacer(),
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: Text('닫기', style: TextStyle(color: _sub, fontWeight: FontWeight.w700))),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _ActionTile(
+                  leading: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(color: _primary.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.edit_outlined),
+                  ),
+                  title: '수정하기',
+                  subtitle: '댓글 내용을 수정해요',
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await _openEditSheet(comment);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ActionTile(
+                  leading: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [Colors.red.shade100, Colors.red.shade200]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  title: '삭제하기',
+                  subtitle: '삭제하면 되돌릴 수 없어요',
+                  titleStyle: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w800),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final ok = await _confirmDeleteComment();
+                    if (!mounted) return;
+                    if (ok) await _deleteComment(comment);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openEditSheet(Map<String, dynamic> comment) async {
+    if (_postId == null) return;
+    final int? commentId = int.tryParse('${comment['id']}');
+    if (commentId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('댓글 ID를 확인할 수 없어요.')));
+      return;
+    }
+
+    final controller = TextEditingController(text: (comment['content'] ?? '').toString());
+    final newContent = await _showEditCommentSheet(controller: controller);
+    if (!mounted || newContent == null) return;
+
+    await _patchComment(postId: _postId!, commentId: commentId, newContent: newContent);
+  }
+
+  Future<String?> _showEditCommentSheet({required TextEditingController controller}) {
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final bottom = MediaQuery.of(ctx).viewInsets.bottom;
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 150),
+          padding: EdgeInsets.only(bottom: bottom),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: Offset(0, -4))],
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 44, height: 5, decoration: BoxDecoration(color: Colors.black.withOpacity(0.12), borderRadius: BorderRadius.circular(3))),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Text('댓글 수정', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 18)),
+                      const Spacer(),
+                      TextButton(onPressed: () => Navigator.pop(ctx), child: Text('취소', style: TextStyle(color: _sub, fontWeight: FontWeight.w700))),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _light,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _primary.withOpacity(0.15)),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: TextField(
+                      controller: controller,
+                      maxLines: 6,
+                      minLines: 4,
+                      autofocus: true,
+                      decoration: const InputDecoration(border: InputBorder.none, hintText: '내용을 입력하세요'),
+                      style: TextStyle(color: _text, fontSize: 15, height: 1.5),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity, height: 48,
+                    child: ElevatedButton(
+                      style: ButtonStyle(
+                        elevation: WidgetStateProperty.all(0),
+                        backgroundColor: WidgetStateProperty.all(_primary),
+                        shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                      ),
+                      onPressed: () {
+                        final text = controller.text.trim();
+                        if (text.isEmpty) return;
+                        Navigator.pop(ctx, text);
+                      },
+                      child: const Text('저장', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _patchComment({required int postId, required int commentId, required String newContent}) async {
+    try {
+      final updated = await ApiService.instance.updateComment(
+        postId: postId,
+        commentId: commentId,
+        content: newContent,
+      );
+      final idx = _comments.indexWhere((c) => '${c['id']}' == '$commentId');
+      if (idx != -1) {
+        setState(() {
+          _comments[idx] = {..._comments[idx], ...updated, 'content': updated['content'] ?? newContent};
+        });
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('댓글을 수정했어요.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('댓글 수정 실패: $e')));
+    }
+  }
+
+  Future<void> _deleteComment(Map<String, dynamic> comment) async {
+    if (_postId == null) return;
+    final int? commentId = int.tryParse('${comment['id']}');
+    if (commentId == null) return;
+
+    try {
+      await ApiService.instance.deleteComment(postId: _postId!, commentId: commentId); // ← API 연결
+      setState(() {
+        _comments.removeWhere((c) => '${c['id']}' == '$commentId');
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('댓글을 삭제했어요.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('댓글 삭제 실패: $e')));
+    }
+  }
+
+  Future<bool> _confirmDeleteComment() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('댓글 삭제'),
+        content: const Text('정말 삭제하시겠어요?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제')),
+        ],
+      ),
+    ) ??
+        false;
+  }
+
   Widget _buildCommentInput() {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 16),
-      decoration: BoxDecoration(
-        color: _card,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: _card, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: Offset(0, -2))]),
       child: SafeArea(
         child: Row(
           children: [
             Expanded(
               child: Container(
-                decoration: BoxDecoration(
-                  color: _light,
-                  borderRadius: BorderRadius.circular(24),
-                ),
+                decoration: BoxDecoration(color: _light, borderRadius: BorderRadius.circular(24)),
                 child: TextField(
                   controller: _commentController,
                   focusNode: _commentFocus,
-                  maxLines: null,
+                  maxLines: 1,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (v) {
+                    final text = v.trim();
+                    if (text.isNotEmpty) _submitComment(text);
+                  },
                   decoration: InputDecoration(
                     hintText: '댓글을 입력하세요...',
                     hintStyle: TextStyle(color: _muted),
@@ -660,19 +692,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ),
             const SizedBox(width: 8),
             Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: _primary,
-                borderRadius: BorderRadius.circular(22),
-              ),
+              width: 44, height: 44,
+              decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(22)),
               child: IconButton(
                 icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                 onPressed: () {
                   final text = _commentController.text.trim();
-                  if (text.isNotEmpty) {
-                    _submitComment(text);
-                  }
+                  if (text.isNotEmpty) _submitComment(text);
                 },
               ),
             ),
@@ -683,24 +709,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Future<void> _submitComment(String content) async {
-    // TODO: 실제 댓글 등록 API 호출
-    setState(() {
-      _comments.add({
-        'id': DateTime.now().millisecondsSinceEpoch,
-        'content': content,
-        'nickname': '나',
-        'createdAt': DateTime.now().toIso8601String(),
-        'isMine': true,
-      });
-    });
-
-    _commentController.clear();
-    _commentFocus.unfocus();
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('댓글이 등록되었습니다.')),
-    );
+    if (_postId == null) return;
+    try {
+      final created = await ApiService.instance.addComment(postId: _postId!, content: content);
+      setState(() => _comments.insert(0, created));
+      _commentController.clear();
+      _commentFocus.unfocus();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('댓글이 등록되었습니다.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('댓글 등록 실패: $e')));
+    }
   }
 
   Future<void> _goEdit() async {
@@ -724,9 +744,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (!mounted) return;
     if (result != null) {
       await _fetch(postId);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('게시글이 수정되었습니다.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('게시글이 수정되었습니다.')));
     }
   }
 
@@ -737,17 +755,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (postId == null) return;
 
     try {
+      final messenger = ScaffoldMessenger.of(context);
       await ApiService.instance.deletePost(postId);
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('게시글이 삭제되었습니다.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('게시글이 삭제되었습니다.')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('삭제 실패: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
     }
   }
 
@@ -756,139 +771,78 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     return await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Container(
-            decoration: BoxDecoration(
-              color: _card,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 아이콘
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Colors.red.shade100, Colors.red.shade50],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.red.withOpacity(0.1), width: 1),
-                  ),
-                  child: Icon(Icons.delete_outline_rounded, size: 36, color: Colors.red.shade600),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  '정말로 삭제하시겠어요?',
-                  style: text.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: _text,
-                    height: 1.2,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '삭제된 게시글은 복구할 수 없습니다.\n신중하게 결정해 주세요.',
-                  style: text.bodyMedium?.copyWith(
-                    color: _sub,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: _light,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => Navigator.pop(ctx, false),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Center(
-                              child: Text(
-                                '취소',
-                                style: TextStyle(
-                                  color: _sub,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        height: 52,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.red.shade500, Colors.red.shade600],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => Navigator.pop(ctx, true),
-                            borderRadius: BorderRadius.circular(16),
-                            child: const Center(
-                              child: Text(
-                                '삭제하기',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _card,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 24, offset: Offset(0, 8))],
           ),
-        );
-      },
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72, height: 72,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.red.shade100, Colors.red.shade50]),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.red.withOpacity(0.1), width: 1),
+                ),
+                child: Icon(Icons.delete_outline_rounded, size: 36, color: Colors.red.shade600),
+              ),
+              const SizedBox(height: 24),
+              Text('정말로 삭제하시겠어요?', style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: _text, height: 1.2), textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              Text('삭제된 게시글은 복구할 수 없습니다.\n신중하게 결정해 주세요.', style: text.bodyMedium?.copyWith(color: _sub, height: 1.5), textAlign: TextAlign.center),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(color: _light, borderRadius: BorderRadius.circular(16)),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.pop(ctx, false),
+                          borderRadius: BorderRadius.circular(16),
+                          child: const Center(child: Text('취소', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700, fontSize: 16))),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.red.shade500, Colors.red.shade600]),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.pop(ctx, true),
+                          borderRadius: BorderRadius.circular(16),
+                          child: const Center(child: Text('삭제하기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16))),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     ) ??
         false;
   }
 
-  // ───────────────────────── 커스텀 액션시트 (수정/삭제)
   Future<void> _showActionSheet() async {
     final p = _post;
     if (p == null) return;
@@ -898,7 +852,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: false,
       builder: (ctx) {
         return SafeArea(
           child: Container(
@@ -906,69 +859,30 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             decoration: BoxDecoration(
               color: _card,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: Offset(0, -4))],
             ),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // grab handle
-                Container(
-                  width: 46,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
+                Container(width: 46, height: 5, decoration: BoxDecoration(color: Colors.black.withOpacity(0.12), borderRadius: BorderRadius.circular(3))),
                 const SizedBox(height: 12),
-
-                // 헤더
                 Row(
                   children: [
-                    Text(
-                      '게시글 옵션',
-                      style: TextStyle(
-                        color: _text,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    Text('게시글 옵션', style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w700)),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: category == '레시피' ? Colors.blue.shade50 : Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        category,
-                        style: TextStyle(
-                          color: category == '레시피' ? Colors.blue.shade600 : Colors.orange.shade600,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
+                      decoration: BoxDecoration(color: category == '레시피' ? Colors.blue.shade50 : Colors.orange.shade50, borderRadius: BorderRadius.circular(10)),
+                      child: Text(category, style: TextStyle(color: category == '레시피' ? Colors.blue.shade600 : Colors.orange.shade600, fontWeight: FontWeight.w700, fontSize: 12)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
-
-                // 수정하기
                 _ActionTile(
                   leading: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: _primary.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(color: _primary.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
                     child: const Icon(Icons.edit_outlined),
                   ),
                   title: '수정하기',
@@ -978,45 +892,21 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     await _goEdit();
                   },
                 ),
-
                 const SizedBox(height: 8),
-
-                // 삭제하기
                 _ActionTile(
-                  leading: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.red.shade100, Colors.red.shade200],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  leading: Container(width: 38, height: 38),
                   title: '삭제하기',
                   subtitle: '삭제하면 되돌릴 수 없어요',
-                  titleStyle: TextStyle(
-                    color: Colors.red.shade700,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  titleStyle: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w800),
                   onTap: () async {
                     Navigator.pop(ctx);
                     final ok = await _confirmDelete();
+                    if (!mounted) return;
                     if (ok) await _delete();
                   },
                 ),
-
                 const SizedBox(height: 6),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    '닫기',
-                    style: TextStyle(
-                      color: _sub,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text('닫기', style: TextStyle(color: _sub, fontWeight: FontWeight.w700))),
               ],
             ),
           ),
@@ -1026,7 +916,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 }
 
-// 액션시트용 공용 타일
+// ───────────────────────── Reusable components
+
 class _ActionTile extends StatelessWidget {
   const _ActionTile({
     required this.leading,
@@ -1052,13 +943,7 @@ class _ActionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: Offset(0, 4))],
         ),
         child: Row(
           children: [
@@ -1068,24 +953,39 @@ class _ActionTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: titleStyle ??
-                        const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                  ),
+                  Text(title, style: titleStyle ?? const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                   const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.black.withOpacity(0.5),
-                      fontSize: 12,
-                    ),
-                  ),
+                  Text(subtitle, style: TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 12)),
                 ],
               ),
             ),
             const Icon(Icons.chevron_right, color: Colors.black54),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KebabButton extends StatelessWidget {
+  const _KebabButton({required this.onTap});
+  final void Function(BuildContext tapContext) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => onTap(context),
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.more_horiz, size: 18, color: Colors.black54),
         ),
       ),
     );
