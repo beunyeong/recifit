@@ -122,5 +122,6 @@ public class PostService {
             throw new CustomException(ErrorCode.NO_DELETE_MODIFY_PERMISSION);
         }
         post.softDelete();
+        post.softDeleteWithComments();
     }
 }

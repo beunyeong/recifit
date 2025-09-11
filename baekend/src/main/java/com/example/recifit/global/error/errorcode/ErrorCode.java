@@ -16,6 +16,7 @@ public enum ErrorCode {
     INVALID_EXPIRATION_DATE(HttpStatus.BAD_REQUEST, "과거 날짜는 보관일로 설정할 수 없습니다."),
     INTERNAL_FORMAT_ERROR(HttpStatus.BAD_REQUEST, "토큰 형식이 유효하지 않습니다."),
     TOKEN_ILLEGAL(HttpStatus.BAD_REQUEST, "토큰이 null이거나 비어있습니다."),
+    COMMENT_NOT_IN_POST(HttpStatus.BAD_REQUEST, "요청한 댓글이 해당 게시글에 속하지 않습니다."),
 
     /**
      * 401 UNAUTHORIZED
@@ -26,8 +27,9 @@ public enum ErrorCode {
      * 403 FORBIDDEN
      */
     NO_POST_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "본인이 작성한 게시글만 수정할 수 있습니다."),
-    NO_DELETE_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "본인이 작성한 게시글만 삭제할 수 있습니다."),
-
+    POST_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "본인이 작성한 게시글만 삭제할 수 있습니다."),
+    COMMENT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "본인이 작성한 댓글만 삭제할 수 있습니다."),
+    NO_COMMENT_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "본인이 작성한 댓글만 수정할 수 있습니다."),
 
     /**
      * 404 NOT_FOUND
@@ -35,6 +37,7 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "멤버 정보를 찾을 수 없습니다."),
     INGREDIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "재료를 찾을 수 없습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
 
     /**
      * 500 INTERNAL_SERVER_ERROR
