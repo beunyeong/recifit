@@ -18,7 +18,7 @@ public class ErrorResponseDto {
     private final String message;
     private final String path;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private final LocalDateTime timestamp;
 
     public ErrorResponseDto(ErrorCode errorCode, String path) {
