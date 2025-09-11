@@ -350,6 +350,69 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> updateComment({
+    required int postId,
+    required int commentId,
+    required String content,
+  }) async {
+    if (!isLoggedIn) throw Exception('로그인이 필요합니다');
+    try {
+      final res = await _dio.patch(
+        '/posts/$postId/comments/$commentId',
+        data: {'content': content},
+      );
+      final status = res.statusCode ?? 500;
+      if (status >= 300) {
+        throw Exception('HTTP $status ${res.requestOptions.uri}\n${res.data}');
+      }
+      final raw = res.data;
+      final data = (raw is Map) ? (raw['data'] ?? raw) : raw;
+      if (data is Map<String, dynamic>) return data;
+      return {'raw': data};
+    } on DioException catch (e) {
+      throw Exception('HTTP ${e.response?.statusCode} ${e.requestOptions.uri}\n${e.response?.data}');
+    }
+  }
+
+  /// 댓글 삭제
+  Future<void> deleteComment({
+    required int postId,
+    required int commentId,
+  }) async {
+    if (!isLoggedIn) throw Exception('로그인이 필요합니다');
+    try {
+      final res = await _dio.delete('/posts/$postId/comments/$commentId');
+
+      // 백엔드가 200 OK + data:null 로 내려보내므로 2xx는 모두 성공 처리
+      final status = res.statusCode ?? 500;
+      if (status >= 300) {
+        // 서버 표준 응답(예: CommonResponseDto)에서 메시지 뽑기
+        final msg = _extractServerMessage(res.data) ?? '댓글 삭제에 실패했어요.';
+        throw Exception('HTTP $status ${res.requestOptions.uri}\n$msg');
+      }
+      return;
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final msg = _extractServerMessage(e.response?.data) ??
+          'HTTP $status ${e.requestOptions.uri}\n${e.response?.data}';
+      throw Exception(msg);
+    }
+  }
+
+  // 서버 표준 응답에서 message / errorMessage를 뽑아주는 헬퍼
+  String? _extractServerMessage(dynamic raw) {
+    if (raw is Map) {
+      final m = raw['message'] ?? raw['errorMessage'] ?? raw['error'] ?? raw['msg'];
+      if (m is String && m.isNotEmpty) return m;
+      final data = raw['data'];
+      if (data is Map) {
+        final dm = data['message'] ?? data['errorMessage'];
+        if (dm is String && dm.isNotEmpty) return dm;
+      }
+    }
+    return null;
+  }
+
   Future<List<Map<String, dynamic>>> searchIngredients(String query) async {
     final res = await _dio.get('/api/ingredients/search', queryParameters: {'query': query});
     if ((res.statusCode ?? 500) >= 300) {
