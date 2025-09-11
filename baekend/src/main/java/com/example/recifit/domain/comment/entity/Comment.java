@@ -18,7 +18,7 @@ import org.hibernate.annotations.Where;
 public class Comment extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String nickname;
