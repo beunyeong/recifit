@@ -76,7 +76,6 @@ public class CommentService {
 
     @Transactional
     public CommentResponseDto updateComment(Long postId, Long commentId, Long memberId, CommentRequestDto commentRequestDto) {
-
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
@@ -91,5 +90,20 @@ public class CommentService {
         comment.updateComment(commentRequestDto.getContent());
 
         return toDto(comment, memberId);
+    }
+
+    @Transactional
+    public void deleteComment(Long postId, Long commentId, Long memberId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+        if (!comment.getPost().getId().equals(postId)) {
+            throw new CustomException(ErrorCode.COMMENT_NOT_IN_POST);
+        }
+
+        if (!comment.getMember().getId().equals(memberId)) {
+            throw new CustomException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
+        }
+        comment.softDelete();
     }
 }

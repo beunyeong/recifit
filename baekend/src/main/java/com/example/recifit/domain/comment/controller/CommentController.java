@@ -54,4 +54,14 @@ public class CommentController {
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.UPDATE_COMMENT_SUCCESS, commentResponseDto));
     }
+
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<CommonResponseDto<Void>> deleteComment(@PathVariable Long postId,
+                                                                 @PathVariable Long commentId,
+                                                                 @AuthenticationPrincipal MemberDetailsImpl memberDetailsImpl) {
+        Long memberId = memberDetailsImpl.getMember().getId();
+        commentService.deleteComment(postId, commentId, memberId);
+
+        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.DELETE_COMMENT_SUCCESS, null));
+    }
 }

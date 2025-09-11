@@ -32,6 +32,7 @@ public enum SuccessCode {
     ADD_COMMENT_SUCCESS("댓글이 작성 되었습니다."),
     GET_COMMENT_SUCCESS("댓글이 조회 되었습니다."),
     UPDATE_COMMENT_SUCCESS("댓글이 수정 되었습니다."),
+    DELETE_COMMENT_SUCCESS("댓글이 삭제 되었습니다."),
 
     /**
      * AI 레시피 추천 관련 Code
