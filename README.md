@@ -81,5 +81,14 @@
 
 ![커뮤니티_250823](https://github.com/user-attachments/assets/a69c55d2-bb6c-4df7-8c92-ecde80ddea84)
 
+---------
+
+**6. 커뮤니티 댓글**
+- 게시글에 댓글을 작성하고, 최신순으로 목록을 확인 할 수 있습니다.
+- 댓글 작성은 로그인 사용자만 가능하며, 댓글의 수정/삭제는 본인 댓글에 한해 허용됩니다.
+
+![커뮤니티 댓글_250911](https://github.com/user-attachments/assets/bfeea179-22f6-4a70-9ba9-b5a0d87e53c8)
+
+
 
 
