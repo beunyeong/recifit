@@ -11,6 +11,7 @@ import com.example.recifit.domain.post.repository.PostRepository;
 import com.example.recifit.global.error.errorcode.ErrorCode;
 import com.example.recifit.global.error.exception.CustomException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,5 +72,24 @@ public class CommentService {
         return comments.stream()
                 .map(comment -> toDto(comment, currentMemberId))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public CommentResponseDto updateComment(Long postId, Long commentId, Long memberId, CommentRequestDto commentRequestDto) {
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+        if (!comment.getPost().getId().equals(postId)) {
+            throw new CustomException(ErrorCode.COMMENT_NOT_IN_POST);
+        }
+
+        if (!comment.getMember().getId().equals(memberId)) {
+            throw new CustomException(ErrorCode.NO_COMMENT_MODIFY_PERMISSION);
+        }
+
+        comment.updateComment(commentRequestDto.getContent());
+
+        return toDto(comment, memberId);
     }
 }
