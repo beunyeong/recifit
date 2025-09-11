@@ -45,6 +45,7 @@ public class CommentService {
 
     }
 
+    @Transactional
     public CommentResponseDto addComment(CommentRequestDto commentRequestDto, Long memberId, Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
@@ -59,6 +60,7 @@ public class CommentService {
                 .member(member)
                 .build()
         );
+        post.incrementCommentCount();
 
         return toDto(comment, memberId);
     }
@@ -94,6 +96,9 @@ public class CommentService {
 
     @Transactional
     public void deleteComment(Long postId, Long commentId, Long memberId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
@@ -105,5 +110,6 @@ public class CommentService {
             throw new CustomException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
         }
         comment.softDelete();
+        post.decrementCommentCount();
     }
 }
