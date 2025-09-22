@@ -37,7 +37,12 @@ public enum SuccessCode {
     /**
      * AI 레시피 추천 관련 Code
      */
-    AI_RECIPE_SUCCESS("AI 레시피 추천 성공");
+    AI_RECIPE_SUCCESS("AI 레시피 추천 성공"),
+
+    /**
+     * 좋아요 관련 Code
+     */
+    ADD_POST_LIKE("게시글 좋아요가 등록되었습니다.");
 
 
 
