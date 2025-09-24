@@ -2,6 +2,7 @@ package com.example.recifit.domain.like.controller;
 
 import com.example.recifit.domain.like.dto.LikeResponseDto;
 import com.example.recifit.domain.like.service.LikeService;
+import com.example.recifit.domain.post.dto.PostResponseDto;
 import com.example.recifit.global.common.CommonResponseDto;
 import com.example.recifit.global.common.SuccessCode;
 import com.example.recifit.global.security.MemberDetailsImpl;
@@ -39,5 +40,15 @@ public class LikeController {
         LikeResponseDto likeResponseDto = likeService.likeDeletePost(postId, memberId);
 
         return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.REMOVE_POST_LIKE_SUCCESS, likeResponseDto));
+    }
+
+    @GetMapping
+    public ResponseEntity<CommonResponseDto<PostResponseDto>> getPostLike(@PathVariable Long postId,
+                                                                          @AuthenticationPrincipal MemberDetailsImpl memberDetailsImpl) {
+        Long memberId = memberDetailsImpl != null ? memberDetailsImpl.getMember().getId() : null;
+
+        PostResponseDto postResponseDto = likeService.getPostLike(postId, memberId);
+
+        return ResponseEntity.ok(CommonResponseDto.success(SuccessCode.GET_POST_SUCCESS, postResponseDto));
     }
 }

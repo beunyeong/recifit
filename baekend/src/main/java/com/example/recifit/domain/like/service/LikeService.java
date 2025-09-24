@@ -5,6 +5,7 @@ import com.example.recifit.domain.like.entity.Like;
 import com.example.recifit.domain.like.repository.LikeRepository;
 import com.example.recifit.domain.member.entity.Member;
 import com.example.recifit.domain.member.repository.MemberRepository;
+import com.example.recifit.domain.post.dto.PostResponseDto;
 import com.example.recifit.domain.post.entity.Post;
 import com.example.recifit.domain.post.repository.PostRepository;
 import com.example.recifit.global.error.errorcode.ErrorCode;
@@ -89,5 +90,32 @@ public class LikeService {
         post.decrementPostLikeCount();
 
         return new LikeResponseDto(false, postId,post.getLikeCount(), false);
+    }
+
+    public PostResponseDto getPostLike(Long postId, Long memberId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        boolean likedByMe = false;
+        boolean mine = false;
+
+        if (memberId != null) {
+            likedByMe = likeRepository.existsByPostIdAndMemberId(postId, memberId);
+            mine = post.getMember() != null && memberId.equals(post.getMember().getId());
+        }
+
+        return new PostResponseDto(
+                post.getId(),
+                post.getMember() != null ? post.getMember().getId() : null,
+                post.getPostCategory(),
+                post.getTitle(),
+                post.getContent(),
+                post.getMember() != null ? post.getMember().getNickname() : null,
+                post.getLikeCount(),
+                post.getCommentCount(),
+                post.getCreatedAt(),
+                mine,
+                likedByMe
+        );
     }
 }

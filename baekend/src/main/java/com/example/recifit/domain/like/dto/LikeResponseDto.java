@@ -10,11 +10,15 @@ public class LikeResponseDto {
 
     private final Long postId;          // 좋아요 누른 게시글 ID
 
-    private final int likePostCount;        // 게시글 총 좋아요 수
+    private final int likeCount;        // 게시글 총 좋아요 수
 
-    public LikeResponseDto(boolean isLiked, Long postId, int likePostCount) {
+    private final boolean likedByMe;        // 내가 좋아요 눌렀는지 확인용
+
+    public LikeResponseDto(boolean isLiked, Long postId, int likeCount,
+                           boolean likedByMe) {
         this.isLiked = isLiked;
         this.postId = postId;
-        this.likePostCount = likePostCount;
+        this.likeCount = likeCount;
+        this.likedByMe = likedByMe;
     }
 }
