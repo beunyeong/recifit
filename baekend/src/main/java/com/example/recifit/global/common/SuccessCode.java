@@ -42,8 +42,8 @@ public enum SuccessCode {
     /**
      * 좋아요 관련 Code
      */
-    ADD_POST_LIKE("게시글 좋아요가 등록되었습니다.");
-
+    ADD_POST_LIKE_SUCCESS("게시글 좋아요가 등록되었습니다."),
+    REMOVE_POST_LIKE_SUCCESS("게시글 좋아요가 삭제되었습니다.");
 
 
     private final String message;
