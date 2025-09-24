@@ -20,6 +20,61 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   int? _postId;
 
+  // 좋아요 캐시
+  bool _liked = false;
+  int _likeCount = 0;
+
+  bool _liking = false;
+
+  Future<void> _toggleLike() async {
+    if (_postId == null || _liking) return;
+    if (!ApiService.instance.isLoggedIn) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
+      return;
+    }
+
+    setState(() => _liking = true);
+
+    final prevLiked = _liked;
+    final prevCount = _likeCount;
+
+    setState(() {
+      _liked = !prevLiked;
+      _likeCount = prevLiked
+          ? (prevCount > 0 ? prevCount - 1 : 0)
+          : prevCount + 1;
+    });
+
+    try {
+      final r = prevLiked
+          ? await ApiService.instance.unlikePost(_postId!)
+          : await ApiService.instance.likePost(_postId!);
+
+      if (!mounted) return;
+      setState(() {
+        if (r['likedByMe'] is bool) {
+          _liked = r['likedByMe'] as bool;
+        }
+        if (r['likeCount'] is num) {
+          _likeCount = (r['likeCount'] as num).toInt();
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      // 실패 시 롤백
+      setState(() {
+        _liked = prevLiked;
+        _likeCount = prevCount;
+      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('좋아요 처리 실패: $e')));
+    } finally {
+      if (!mounted) return;
+      setState(() => _liking = false);
+    }
+  }
+
   Color get _bg => const Color(0xFFF7F5F3);
   Color get _card => const Color(0xFFFFFFFE);
   Color get _text => const Color(0xFF2C2C2C);
@@ -61,7 +116,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     });
     try {
       final data = await ApiService.instance.fetchPost(postId);
-      setState(() => _post = data);
+      final liked = data['likedByMe'] == true;
+      final likeCount = int.tryParse('${data['likeCount'] ?? 0}') ?? 0;
+
+      setState(() {
+        _post = data;
+        _liked = liked;
+        _likeCount = likeCount;
+      });
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -140,7 +202,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         decoration: BoxDecoration(
           color: _card,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: _text, size: 20),
@@ -154,7 +216,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             decoration: BoxDecoration(
               color: _card,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: Offset(0, 2))],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: IconButton(
               icon: Icon(Icons.more_horiz, color: _sub),
@@ -208,7 +270,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final content = (p['content'] ?? '').toString();
     final nickname = (p['nickname'] ?? p['name'] ?? '익명').toString();
     final category = (p['postCategory'] ?? '').toString() == 'RECIPE' ? '레시피' : '팁';
-    final likeCount = int.tryParse('${p['likeCount'] ?? 0}') ?? 0;
     final commentCount = int.tryParse('${p['commentCount'] ?? 0}') ?? 0;
     final createdAt = (p['createdAt'] ?? '').toString();
 
@@ -218,7 +279,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +318,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           Row(
             children: [
               Container(
-                width: 32, height: 32,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(color: _primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
                 child: Center(
                   child: Text(nickname.isNotEmpty ? nickname[0] : '?',
@@ -283,7 +345,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildInteractionButton(icon: Icons.favorite_border_rounded, count: likeCount, onTap: () {}),
+              _buildLikeButton(),
               const SizedBox(width: 20),
               _buildInteractionButton(
                 icon: Icons.chat_bubble_outline_rounded,
@@ -295,6 +357,28 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLikeButton() {
+    return InkWell(
+      onTap: _liking ? null : _toggleLike, // ← 처리 중엔 비활성화
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            Icon(
+              _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              size: 20,
+              color: _liked ? Colors.redAccent : _sub,
+            ),
+            const SizedBox(width: 6),
+            Text('$_likeCount',
+                style: TextStyle(color: _sub, fontWeight: FontWeight.w600, fontSize: 14)),
+          ],
+        ),
       ),
     );
   }
@@ -324,7 +408,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(20), boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: Offset(0, 4)),
+        BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4)),
       ]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,7 +422,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(color: _primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                  child: Text('${_comments.length}', style: TextStyle(color: _primary, fontSize: 12, fontWeight: FontWeight.w700)),
+                  child: Text(
+                    '${_comments.length}',
+                    style: TextStyle(color: _primary, fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),
@@ -346,9 +433,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           if (_commentsLoading)
             const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
           else if (_comments.isEmpty)
-            SizedBox(
+            const SizedBox(
               height: 200,
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -395,7 +482,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           Row(
             children: [
               Container(
-                width: 28, height: 28,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(
                   color: isMine ? _primary.withOpacity(0.2) : _sub.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
@@ -461,7 +549,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             decoration: BoxDecoration(
               color: _card,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: Offset(0, -4))],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: const Offset(0, -4))],
             ),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: Column(
@@ -479,7 +567,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 const SizedBox(height: 8),
                 _ActionTile(
                   leading: Container(
-                    width: 38, height: 38,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(color: _primary.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
                     child: const Icon(Icons.edit_outlined),
                   ),
@@ -493,7 +582,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 const SizedBox(height: 8),
                 _ActionTile(
                   leading: Container(
-                    width: 38, height: 38,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(colors: [Colors.red.shade100, Colors.red.shade200]),
                       borderRadius: BorderRadius.circular(12),
@@ -549,7 +639,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               decoration: BoxDecoration(
                 color: _card,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: Offset(0, -4))],
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: const Offset(0, -4))],
               ),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               child: Column(
@@ -583,7 +673,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
-                    width: double.infinity, height: 48,
+                    width: double.infinity,
+                    height: 48,
                     child: ElevatedButton(
                       style: ButtonStyle(
                         elevation: WidgetStateProperty.all(0),
@@ -607,7 +698,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  Future<void> _patchComment({required int postId, required int commentId, required String newContent}) async {
+  Future<void> _patchComment({
+    required int postId,
+    required int commentId,
+    required String newContent,
+  }) async {
     try {
       final updated = await ApiService.instance.updateComment(
         postId: postId,
@@ -634,9 +729,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (commentId == null) return;
 
     try {
-      await ApiService.instance.deleteComment(postId: _postId!, commentId: commentId); // ← API 연결
+      await ApiService.instance.deleteComment(postId: _postId!, commentId: commentId);
       setState(() {
         _comments.removeWhere((c) => '${c['id']}' == '$commentId');
+        // 화면상 표시되는 댓글 카운트도 반영
+        if (_post != null) {
+          final current = int.tryParse('${_post!['commentCount'] ?? 0}') ?? 0;
+          _post = {..._post!, 'commentCount': (current - 1).clamp(0, 1 << 31)};
+        }
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('댓글을 삭제했어요.')));
@@ -664,7 +764,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget _buildCommentInput() {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 16),
-      decoration: BoxDecoration(color: _card, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: Offset(0, -2))]),
+      decoration:
+      BoxDecoration(color: _card, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, -2))]),
       child: SafeArea(
         child: Row(
           children: [
@@ -692,7 +793,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ),
             const SizedBox(width: 8),
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(22)),
               child: IconButton(
                 icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
@@ -712,8 +814,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (_postId == null) return;
     try {
       final created = await ApiService.instance.addComment(postId: _postId!, content: content);
-      setState(() => _comments.insert(0, created));
-      _commentController.clear();
+      setState(() {
+        _comments.insert(0, created);
+        _commentController.clear();
+        // 댓글 카운트 증가
+        if (_post != null) {
+          final current = int.tryParse('${_post!['commentCount'] ?? 0}') ?? 0;
+          _post = {..._post!, 'commentCount': current + 1};
+        }
+      });
       _commentFocus.unfocus();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('댓글이 등록되었습니다.')));
@@ -778,14 +887,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           decoration: BoxDecoration(
             color: _card,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 24, offset: Offset(0, 8))],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 24, offset: const Offset(0, 8))],
           ),
           padding: const EdgeInsets.all(28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 72, height: 72,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.red.shade100, Colors.red.shade50]),
                   borderRadius: BorderRadius.circular(20),
@@ -794,9 +904,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 child: Icon(Icons.delete_outline_rounded, size: 36, color: Colors.red.shade600),
               ),
               const SizedBox(height: 24),
-              Text('정말로 삭제하시겠어요?', style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: _text, height: 1.2), textAlign: TextAlign.center),
+              Text(
+                '정말로 삭제하시겠어요?',
+                style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: _text, height: 1.2),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 12),
-              Text('삭제된 게시글은 복구할 수 없습니다.\n신중하게 결정해 주세요.', style: text.bodyMedium?.copyWith(color: _sub, height: 1.5), textAlign: TextAlign.center),
+              Text(
+                '삭제된 게시글은 복구할 수 없습니다.\n신중하게 결정해 주세요.',
+                style: text.bodyMedium?.copyWith(color: _sub, height: 1.5),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 32),
               Row(
                 children: [
@@ -809,7 +927,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         child: InkWell(
                           onTap: () => Navigator.pop(ctx, false),
                           borderRadius: BorderRadius.circular(16),
-                          child: const Center(child: Text('취소', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700, fontSize: 16))),
+                          child: const Center(
+                            child: Text('취소', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w700, fontSize: 16)),
+                          ),
                         ),
                       ),
                     ),
@@ -821,14 +941,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.red.shade500, Colors.red.shade600]),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))],
+                        boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
                       ),
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () => Navigator.pop(ctx, true),
                           borderRadius: BorderRadius.circular(16),
-                          child: const Center(child: Text('삭제하기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16))),
+                          child: const Center(
+                            child: Text('삭제하기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                          ),
                         ),
                       ),
                     ),
@@ -859,7 +981,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             decoration: BoxDecoration(
               color: _card,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: Offset(0, -4))],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 20, offset: const Offset(0, -4))],
             ),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: Column(
@@ -873,15 +995,26 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: category == '레시피' ? Colors.blue.shade50 : Colors.orange.shade50, borderRadius: BorderRadius.circular(10)),
-                      child: Text(category, style: TextStyle(color: category == '레시피' ? Colors.blue.shade600 : Colors.orange.shade600, fontWeight: FontWeight.w700, fontSize: 12)),
+                      decoration: BoxDecoration(
+                        color: category == '레시피' ? Colors.blue.shade50 : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          color: category == '레시피' ? Colors.blue.shade600 : Colors.orange.shade600,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 _ActionTile(
                   leading: Container(
-                    width: 38, height: 38,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(color: _primary.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
                     child: const Icon(Icons.edit_outlined),
                   ),
@@ -943,7 +1076,7 @@ class _ActionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Row(
           children: [
