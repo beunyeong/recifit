@@ -48,13 +48,4 @@ public class PostResponseDto {
         this.mine = mine;
         this.likedByMe = likedByMe;
     }
-
-//    public PostResponseDto(Long id, PostCategory postCategory, String title,
-//                           String content, String nickname, int likeCount,
-//                           int commentCount, LocalDateTime createdAt) {
-//        this(id, null, postCategory,
-//                title, content, nickname,
-//                likeCount, commentCount, createdAt,
-//                false, false);
-//    }
 }
