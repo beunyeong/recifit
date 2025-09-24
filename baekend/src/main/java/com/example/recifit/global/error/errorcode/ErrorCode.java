@@ -30,6 +30,7 @@ public enum ErrorCode {
     POST_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "본인이 작성한 게시글만 삭제할 수 있습니다."),
     COMMENT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "본인이 작성한 댓글만 삭제할 수 있습니다."),
     NO_COMMENT_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "본인이 작성한 댓글만 수정할 수 있습니다."),
+    POST_LIKE_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 좋아요만 삭제할 수 있습니다."),
 
     /**
      * 404 NOT_FOUND
@@ -38,6 +39,7 @@ public enum ErrorCode {
     INGREDIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "재료를 찾을 수 없습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
+    POST_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요를 찾을 수 없습니다."),
 
     /**
      * 500 INTERNAL_SERVER_ERROR

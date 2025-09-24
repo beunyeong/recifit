@@ -119,7 +119,7 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         if(!post.getMember().getId().equals(memberId)) {
-            throw new CustomException(ErrorCode.NO_DELETE_MODIFY_PERMISSION);
+            throw new CustomException(ErrorCode.POST_DELETE_FORBIDDEN);
         }
         post.softDelete();
         post.softDeleteWithComments();

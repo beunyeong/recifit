@@ -70,4 +70,26 @@ public class Post extends BaseEntity {
         this.title = title;
         this.content = content;
     }
+
+    public void incrementCommentCount() {
+        this.commentCount++;
+    }
+
+    public void decrementCommentCount() {
+        if (this.commentCount > 0) {
+            this.commentCount--;
+        }
+    }
+
+    // 게시글 좋아요 수 증가
+    public void incrementPostLikeCount() {
+        this.likeCount++;
+    }
+
+    // 게시글 좋아요 수 감소
+    public void decrementPostLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+    }
 }

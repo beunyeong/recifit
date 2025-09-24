@@ -30,10 +30,12 @@ public class PostResponseDto {
 
     private boolean mine;
 
+    private boolean likedByMe;
+
     public PostResponseDto(Long id, Long memberId, PostCategory postCategory, String title,
                            String content, String nickname, int likeCount,
                            int commentCount, LocalDateTime createdAt,
-                           boolean mine) {
+                           boolean mine, boolean likedByMe) {
         this.id = id;
         this.memberId = memberId;
         this.postCategory = postCategory;
@@ -44,11 +46,6 @@ public class PostResponseDto {
         this.commentCount = commentCount;
         this.createdAt = createdAt;
         this.mine = mine;
-    }
-
-    public PostResponseDto(Long id, PostCategory postCategory, String title,
-                           String content, String nickname, int likeCount,
-                           int commentCount, LocalDateTime createdAt) {
-        this(id, null, postCategory, title, content, nickname, likeCount, commentCount, createdAt, false);
+        this.likedByMe = likedByMe;
     }
 }
