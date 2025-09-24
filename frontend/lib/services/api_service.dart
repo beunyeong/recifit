@@ -314,6 +314,45 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> fetchPost(int postId) async {
+    final res = await _dio.get('/likes/post/$postId');
+    if ((res.statusCode ?? 500) >= 300) {
+      throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
+    }
+    final raw = res.data;
+    final data = (raw is Map) ? (raw['data'] ?? raw) : raw;
+    if (data is Map<String, dynamic>) return data;
+    throw Exception('Unexpected response for GET /posts/$postId: $data');
+  }
+
+// 좋아요
+  Future<Map<String, dynamic>> likePost(int postId) async {
+    if (!isLoggedIn) throw Exception('로그인이 필요합니다');
+    final res = await _dio.post('/likes/post/$postId');
+    if ((res.statusCode ?? 500) >= 300) {
+      throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
+    }
+    final body = res.data;
+    final data = (body is Map) ? (body['data'] ?? body) : body;
+    return (data is Map)
+        ? Map<String, dynamic>.from(data as Map)
+        : <String, dynamic>{};
+  }
+
+// 좋아요 취소
+  Future<Map<String, dynamic>> unlikePost(int postId) async {
+    if (!isLoggedIn) throw Exception('로그인이 필요합니다');
+    final res = await _dio.delete('/likes/post/$postId');
+    if ((res.statusCode ?? 500) >= 300) {
+      throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
+    }
+    final body = res.data;
+    final data = (body is Map) ? (body['data'] ?? body) : body;
+    return (data is Map)
+        ? Map<String, dynamic>.from(data as Map)
+        : <String, dynamic>{};
+  }
+
   Future<List<Map<String, dynamic>>> fetchComments({
     required int postId,
     bool mine = false,
@@ -427,17 +466,6 @@ class ApiService {
       final code = m['foodCd'] ?? m['식품코드'];
       return {...m, 'name': name, 'category': category, if (code != null) 'code': code};
     }).toList();
-  }
-
-  Future<Map<String, dynamic>> fetchPost(int postId) async {
-    final res = await _dio.get('/posts/$postId');
-    if ((res.statusCode ?? 500) >= 300) {
-      throw Exception('HTTP ${res.statusCode} ${res.requestOptions.uri}\n${res.data}');
-    }
-    final raw = res.data;
-    final data = (raw is Map) ? (raw['data'] ?? raw) : raw;
-    if (data is Map<String, dynamic>) return data;
-    throw Exception('Unexpected response for GET /posts/$postId: $data');
   }
 
   Future<void> addIngredient({
