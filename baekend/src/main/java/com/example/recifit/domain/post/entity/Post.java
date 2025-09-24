@@ -80,4 +80,16 @@ public class Post extends BaseEntity {
             this.commentCount--;
         }
     }
+
+    // 게시글 좋아요 수 증가
+    public void incrementPostLikeCount() {
+        this.likeCount++;
+    }
+
+    // 게시글 좋아요 수 감소
+    public void decrementPostLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+    }
 }
